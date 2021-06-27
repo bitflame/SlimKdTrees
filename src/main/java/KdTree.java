@@ -1,11 +1,8 @@
 
+import edu.princeton.cs.algs4.*;
 
-import edu.princeton.cs.algs4.Queue;
-import edu.princeton.cs.algs4.Point2D;
-import edu.princeton.cs.algs4.RectHV;
-import edu.princeton.cs.algs4.StdOut;
-import edu.princeton.cs.algs4.StdDraw;
-import edu.princeton.cs.algs4.In;
+import java.util.ArrayList;
+
 
 public class KdTree {
     private Node root;
@@ -19,6 +16,7 @@ public class KdTree {
         boolean coordinate; // 0 means horizontal
         private RectHV rect; // the axis-aligned rectangle corresponding to this node
 
+
         public Node(Point2D p, int n, boolean coordinate, Node parent) {
             this.p = p;
             this.coordinate = coordinate;
@@ -31,20 +29,32 @@ public class KdTree {
         the new node not the other way around */
         @Override
         public int compareTo(Node h) {
+            double thisX = this.p.x();
+            double thisY = this.p.y();
+            double hX = h.p.x();
+            double hY = h.p.y();
             if (this.coordinate == false) {
-                if (this.p.x() < h.p.x()) {
+                if (thisX < hX) {
+                    // this.x to 1.0, 0.0 to h.p.y()
+                    h.rect = new RectHV(thisX, 0.0, 1.0, hY);
                     h.coordinate = true;
                     return -1;
                 } else {
+                    // 0.0 to this.p.x(), 0.0 to 1.0
+                    h.rect = new RectHV(0.0, 0.0, thisX, hY);
                     h.coordinate = true;
                     return 1;
                 }
             }
             if (this.coordinate) {
                 if (this.p.y() < h.p.y()) {
+                    // 0.0, this.p.y(), h.p.x(), 1.0
+                    h.rect = new RectHV(0.0, this.p.y(), hX, 1.0);
                     h.coordinate = false;
                     return -1;
                 } else {
+                    // 0.0, 0.0 to h.p.x(), this.p.y()
+                    h.rect = new RectHV(0.0, 0.0, hX, thisY);
                     h.coordinate = false;
                     return 1;
                 }
@@ -108,6 +118,8 @@ public class KdTree {
     }
 
     public Iterable<Point2D> range(RectHV rect) {
+        if (rect == null) throw new IllegalArgumentException("rectangle has to be a valid " +
+                "object. ");
         pq = new Queue<>();
         range(root, rect);
         return pq;
@@ -117,15 +129,44 @@ public class KdTree {
         return get(p) != null;
     }
 
-
     private Iterable<Point2D> range(Node h, RectHV rect) {
-        if (h.rect.intersects(rect)) {
-            if (rect.contains(h.p)) pq.enqueue(h.p);
-            /* only look at the left and right children's rectangles if the root's rectangle intersects with the
-             * desired rectangle area */
-            if (h.left != null) range(h.left, rect);
-            if (h.right != null) range(h.right, rect);
-
+        // If h is horizontal and h.right() or h.left()
+        ArrayList<Point2D> points = new ArrayList<>();
+        if (h.coordinate == false) {
+            RectHV rHl = new RectHV(0.0, 0.0, h.p.x(), 1.0);
+            if (rHl.intersects(rect) && h.left != null) {
+                range(h.left, rect);
+            } else if (h.left == null) {
+                for (Node n : keys(h)) {
+                    if (rect.contains(n.p) && (!points.contains(n.p))) points.add(n.p);
+                }
+            }
+            RectHV rHr = new RectHV(h.p.x(), 0.0, 1.0, 1.0);
+            if (rHr.intersects(rect) && h.right != null) {
+                range(h.right, rect);
+            } else if (h.right == null) {
+                for (Node n : keys(h)) {
+                    if (rect.contains(n.p) && (!points.contains(n.p))) points.add(n.p);
+                }
+            }
+        }
+        if (h.coordinate) {
+            RectHV rHl = new RectHV(0.0, 0.0, 1.0, h.p.y());
+            if (rHl.intersects(rect) && h.left != null) {
+                range(h.left, rect);
+            } else if (h.left == null) {
+                for (Node n : keys(h)) {
+                    if (rect.contains(n.p) && (!points.contains(n.p))) points.add(n.p);
+                }
+            }
+            RectHV rHr = new RectHV(0.0, h.p.y(), 1.0, 1.0);
+            if (rHr.intersects(rect) && h.right != null) {
+                range(h.right, rect);
+            } else if (h.right == null) {
+                for (Node n : keys(h)) {
+                    if (rect.contains(n.p) && (!points.contains(n.p))) points.add(n.p);
+                }
+            }
         }
         return pq;
     }
@@ -166,7 +207,7 @@ public class KdTree {
             if (cmp < 0) {
                 h.left = insert(h.left, newNode);
             } else if (cmp > 0) {
-                h.right =insert(h.right,newNode);
+                h.right = insert(h.right, newNode);
             }
         }
         /* Create a new node here with p, and use Node compareTo() to add it to
@@ -240,22 +281,22 @@ public class KdTree {
     }
 
     public static void main(String[] args) {
-        String filename = args[0];
-        In in = new In(filename);
-        PointSET brute = new PointSET();
-        KdTree kdtree = new KdTree();
-        while (!in.isEmpty()) {
-            double x = in.readDouble();
-            double y = in.readDouble();
-            Point2D p = new Point2D(x, y);
-            kdtree.insert(p);
-            brute.insert(p);
-        }
-        StdOut.println("Should be 10 " + kdtree.size());
-        StdOut.println("Should be 10 " + brute.size());
-        StdOut.println("Should be false " + kdtree.isEmpty());
-        StdOut.println("Should be false " + brute.isEmpty());
-        kdtree.draw();
+//        String filename = args[0];
+//        In in = new In(filename);
+//        PointSET brute = new PointSET();
+//        KdTree kdtree = new KdTree();
+//        while (!in.isEmpty()) {
+//            double x = in.readDouble();
+//            double y = in.readDouble();
+//            Point2D p = new Point2D(x, y);
+//            kdtree.insert(p);
+//            brute.insert(p);
+//        }
+//        StdOut.println("Should be 10 " + kdtree.size());
+//        StdOut.println("Should be 10 " + brute.size());
+//        StdOut.println("Should be false " + kdtree.isEmpty());
+//        StdOut.println("Should be false " + brute.isEmpty());
+//        kdtree.draw();
 
 //        KdTree kt = new KdTree();
 //        Point2D p1 = new Point2D(0.5, 0.25);
@@ -278,27 +319,29 @@ public class KdTree {
 //        kt.insert(p9);
 //        Point2D p10 = new Point2D(0.25, 0.5);
 //        kt.insert(p10);
-//        Point2D queryPoint = new Point2D(0.75, 0.75);
-        // kt.draw();
+        //Point2D queryPoint = new Point2D(0.75, 0.75);
+        //kt.draw();
         // StdOut.println("Distance Squared to Query Point: " + kt.nearest(queryPoint).distanceSquaredTo(queryPoint));
         // StdOut.println(kt.nearest(queryPoint));
 //        StdOut.println("Changed something for testing.");
-//        KdTree k = new KdTree();
-//        Queue<Point2D> s = new Queue<>();
-//        Point2D p1 = new Point2D(0.7, 0.2);
-//        s.enqueue(p1);
-//        Point2D p2 = new Point2D(0.5, 0.4);
-//        s.enqueue(p2);
-//        Point2D p3 = new Point2D(0.2, 0.3);
-//        s.enqueue(p3);
-//        Point2D p4 = new Point2D(0.4, 0.7);
-//        s.enqueue(p4);
-//        Point2D p5 = new Point2D(0.9, 0.6);
-//        s.enqueue(p5);
-//        for (Point2D p : s) {
-//            k.insert(p);
-//        }
-//        k.draw();
+        KdTree k = new KdTree();
+        Queue<Point2D> s = new Queue<>();
+        Point2D p1 = new Point2D(0.7, 0.2);
+        s.enqueue(p1);
+        Point2D p2 = new Point2D(0.5, 0.4);
+        s.enqueue(p2);
+        Point2D p3 = new Point2D(0.2, 0.3);
+        s.enqueue(p3);
+        Point2D p4 = new Point2D(0.4, 0.7);
+        s.enqueue(p4);
+        Point2D p5 = new Point2D(0.9, 0.6);
+        s.enqueue(p5);
+        for (Point2D p : s) {
+            k.insert(p);
+        }
+        RectHV r = new RectHV(0.4, 0.3, 0.6, 0.7);
+        StdOut.println("Here is the point in your rectangle : " + k.range(r));
+        k.draw();
 //        for (int i = 0; i < 20; i++) {
 //            Point2D p = new Point2D(StdRandom.uniform(0.0, 1.0), StdRandom.uniform(0.0, 1.0));
 //            k.insert(p);
