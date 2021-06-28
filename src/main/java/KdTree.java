@@ -186,6 +186,8 @@ public class KdTree {
                         h.parent.rect.xmax(), h.parent.p.y());
                 rHr = new RectHV(h.p.x(), h.rect.ymin(), h.rect.xmax(), h.rect.ymax());
             }
+            // check for points when h.rect does not intersect but h.parent.rect does
+
             if (rHl.intersects(rect) && h.left != null) {
                 h.left.rect = rHl;
                 range(h.left, rect);
