@@ -8,6 +8,7 @@ public class KdTree {
     private Node root;
     private Queue<Node> q = new Queue<>();
     private Queue<Point2D> pq = new Queue<>();
+    ArrayList<Point2D> points = new ArrayList<>();
 
     private static class Node implements Comparable<Node> {
         Point2D p; // key
@@ -33,29 +34,29 @@ public class KdTree {
             double thisY = this.p.y();
             double hX = h.p.x();
             double hY = h.p.y();
-            if (this.coordinate == false) {
+            if (h.coordinate == false) {
                 if (thisX < hX) {
                     // this.x to 1.0, 0.0 to h.p.y()
-                    h.rect = new RectHV(thisX, 0.0, 1.0, hY);
-                    h.coordinate = true;
+                    // h.rect = new RectHV(thisX, 0.0, 1.0, 1.0);
+                    this.coordinate = true;
                     return -1;
                 } else {
                     // 0.0 to this.p.x(), 0.0 to 1.0
-                    h.rect = new RectHV(0.0, 0.0, thisX, hY);
-                    h.coordinate = true;
+                    // h.rect = new RectHV(0.0, 0.0, thisX, 1.0);
+                    this.coordinate = true;
                     return 1;
                 }
             }
-            if (this.coordinate) {
-                if (this.p.y() < h.p.y()) {
+            if (h.coordinate) {
+                if (thisY < hY) {
                     // 0.0, this.p.y(), h.p.x(), 1.0
-                    h.rect = new RectHV(0.0, this.p.y(), hX, 1.0);
-                    h.coordinate = false;
+                    // h.rect = new RectHV(0.0, thisY, 1.0, 1.0);
+                    this.coordinate = false;
                     return -1;
                 } else {
                     // 0.0, 0.0 to h.p.x(), this.p.y()
-                    h.rect = new RectHV(0.0, 0.0, hX, thisY);
-                    h.coordinate = false;
+                    //h.rect = new RectHV(0.0, 0.0, 1.0, thisY);
+                    this.coordinate = false;
                     return 1;
                 }
             }
@@ -64,24 +65,66 @@ public class KdTree {
     }
 
     public void draw() {
-        StdDraw.setPenRadius(0.012);
-        for (Node n : this.keys()) {
-            if (isHorizontal(n)) {
-                StdDraw.setPenColor(StdDraw.BLACK);
-                StdDraw.setPenRadius(0.012);
-                StdDraw.point(n.p.x(), n.p.y());
-                StdDraw.setPenRadius(0.003);
-                StdDraw.setPenColor(StdDraw.RED);
-                StdDraw.line(n.p.x(), n.rect.ymin(), n.p.x(), n.rect.ymax());
-            } else if (isVertical(n)) {
-                StdDraw.setPenColor(StdDraw.BLACK);
-                StdDraw.setPenRadius(0.012);
-                StdDraw.point(n.p.x(), n.p.y());
-                StdDraw.setPenRadius(0.003);
-                StdDraw.setPenColor(StdDraw.BLUE);
-                StdDraw.line(n.rect.xmin(), n.p.y(), n.rect.xmax(), n.p.y());
+        RectHV rec = new RectHV(0.0, 0.0, 1.0, 1.0);
+//        StdDraw.setPenRadius(0.012);
+//        for (Node n : this.keys()) {
+//            double nX = n.p.x();
+//            double nY = n.p.y();
+//            if (isHorizontal(n)) {
+//                StdDraw.setPenColor(StdDraw.BLACK);
+//                StdDraw.setPenRadius(0.012);
+//                StdDraw.point(n.p.x(), n.p.y());
+//                StdDraw.setPenRadius(0.003);
+//                StdDraw.setPenColor(StdDraw.RED);
+//                StdDraw.line(n.p.x(), n.rect.ymin(), n.p.x(), n.rect.ymax());
+//            } else if (isVertical(n)) {
+//                StdDraw.setPenColor(StdDraw.BLACK);
+//                StdDraw.setPenRadius(0.012);
+//                StdDraw.point(n.p.x(), n.p.y());
+//                StdDraw.setPenRadius(0.003);
+//                StdDraw.setPenColor(StdDraw.BLUE);
+//                StdDraw.line(n.rect.xmin(), n.p.y(), n.rect.xmax(), n.p.y());
+//            }
+//        }
+        if (root==null) return;
+        draw(root, rec);
+    }
+
+    private void draw(Node h, RectHV rectHV) {
+        if (h.coordinate == false) {
+            StdDraw.setPenColor(StdDraw.BLACK);
+            StdDraw.setPenRadius(0.012);
+            StdDraw.point(h.p.x(), h.p.y());
+            StdDraw.point(h.p.x(), h.p.y());
+            StdDraw.setPenRadius(0.003);
+            StdDraw.setPenColor(StdDraw.RED);
+            // StdDraw.line(h.p.x(), rectHV.ymin(), h.p.x(), rectHV.ymax());
+            StdDraw.line(h.p.x(), h.rect.ymin(), h.p.x(), h.rect.ymax());
+            /* if h is less than its parent y goes from 0 to h.parent.y , if h is greater than its parent, y goes
+            * from h.parent.y to 1.0 */
+            if (h.left != null) {
+                h.left.rect = new RectHV(rectHV.xmin(), rectHV.ymin(), h.p.x(), rectHV.ymax());
+                draw(h.left, h.left.rect);
+            }
+            if (h.right != null) {
+                h.right.rect = new RectHV(h.p.x(), rectHV.ymin(), rectHV.xmax(), rectHV.ymax());
+                draw(h.right, h.right.rect);
+            }
+        } else if (h.coordinate) {
+            StdDraw.setPenColor(StdDraw.BLACK);
+            StdDraw.setPenRadius(0.012);
+            StdDraw.point(h.p.x(), h.p.y());
+            StdDraw.setPenRadius(0.003);
+            StdDraw.setPenColor(StdDraw.BLUE);
+            StdDraw.line(rectHV.xmin(), h.p.y(), rectHV.xmax(), h.p.y());
+            if (h.left!=null) {
+                // the sub rectangles are different depending on parent axis orientation
+            }
+            if (h.right!=null) {
+
             }
         }
+
     }
 
     private Point2D get(Point2D p) {
@@ -120,9 +163,7 @@ public class KdTree {
     public Iterable<Point2D> range(RectHV rect) {
         if (rect == null) throw new IllegalArgumentException("rectangle has to be a valid " +
                 "object. ");
-        pq = new Queue<>();
-        range(root, rect);
-        return pq;
+        return range(root, rect);
     }
 
     public boolean contains(Point2D p) {
@@ -131,7 +172,6 @@ public class KdTree {
 
     private Iterable<Point2D> range(Node h, RectHV rect) {
         // If h is horizontal and h.right() or h.left()
-        ArrayList<Point2D> points = new ArrayList<>();
         if (h.coordinate == false) {
             RectHV rHl = new RectHV(0.0, 0.0, h.p.x(), 1.0);
             if (rHl.intersects(rect) && h.left != null) {
@@ -141,7 +181,7 @@ public class KdTree {
                     if (rect.contains(n.p) && (!points.contains(n.p))) points.add(n.p);
                 }
             }
-            RectHV rHr = new RectHV(h.p.x(), 0.0, 1.0, 1.0);
+            RectHV rHr = new RectHV(h.p.x(), 0.0, 1.0, 1.0);//<------
             if (rHr.intersects(rect) && h.right != null) {
                 range(h.right, rect);
             } else if (h.right == null) {
@@ -149,8 +189,7 @@ public class KdTree {
                     if (rect.contains(n.p) && (!points.contains(n.p))) points.add(n.p);
                 }
             }
-        }
-        if (h.coordinate) {
+        } else if (h.coordinate) {
             RectHV rHl = new RectHV(0.0, 0.0, 1.0, h.p.y());
             if (rHl.intersects(rect) && h.left != null) {
                 range(h.left, rect);
@@ -168,7 +207,7 @@ public class KdTree {
                 }
             }
         }
-        return pq;
+        return points;
     }
 
     private static boolean isHorizontal(Node x) {
@@ -203,7 +242,7 @@ public class KdTree {
         if (h == null) {
             return newNode;
         } else {
-            int cmp = h.compareTo(newNode);
+            int cmp = newNode.compareTo(h);
             if (cmp < 0) {
                 h.left = insert(h.left, newNode);
             } else if (cmp > 0) {
@@ -339,8 +378,8 @@ public class KdTree {
         for (Point2D p : s) {
             k.insert(p);
         }
-        RectHV r = new RectHV(0.4, 0.3, 0.6, 0.7);
-        StdOut.println("Here is the point in your rectangle : " + k.range(r));
+//        RectHV r = new RectHV(0.4, 0.3, 0.6, 0.7);
+//        StdOut.println("Here is the point in your rectangle : " + k.range(r));
         k.draw();
 //        for (int i = 0; i < 20; i++) {
 //            Point2D p = new Point2D(StdRandom.uniform(0.0, 1.0), StdRandom.uniform(0.0, 1.0));
