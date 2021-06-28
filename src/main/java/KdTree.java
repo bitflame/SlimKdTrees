@@ -86,7 +86,7 @@ public class KdTree {
 //                StdDraw.line(n.rect.xmin(), n.p.y(), n.rect.xmax(), n.p.y());
 //            }
 //        }
-        if (root==null) return;
+        if (root == null) return;
         draw(root, rec);
     }
 
@@ -101,7 +101,7 @@ public class KdTree {
             // StdDraw.line(h.p.x(), rectHV.ymin(), h.p.x(), rectHV.ymax());
             StdDraw.line(h.p.x(), h.rect.ymin(), h.p.x(), h.rect.ymax());
             /* if h is less than its parent y goes from 0 to h.parent.y , if h is greater than its parent, y goes
-            * from h.parent.y to 1.0 */
+             * from h.parent.y to 1.0 */
             if (h.left != null) {
                 h.left.rect = new RectHV(rectHV.xmin(), rectHV.ymin(), h.p.x(), rectHV.ymax());
                 draw(h.left, h.left.rect);
@@ -117,12 +117,12 @@ public class KdTree {
             StdDraw.setPenRadius(0.003);
             StdDraw.setPenColor(StdDraw.BLUE);
             StdDraw.line(rectHV.xmin(), h.p.y(), rectHV.xmax(), h.p.y());
-            if (h.left!=null) {
+            if (h.left != null) {
                 // the sub rectangles are different depending on parent axis orientation
                 h.left.rect = new RectHV(rectHV.xmin(), rectHV.ymin(), rectHV.xmax(), h.p.y());
                 draw(h.left, h.left.rect);
             }
-            if (h.right!=null) {
+            if (h.right != null) {
                 h.right.rect = new RectHV(rectHV.xmin(), h.p.y(), rectHV.xmax(), rectHV.ymax());
                 draw(h.right, h.right.rect);
             }
@@ -174,35 +174,48 @@ public class KdTree {
     }
 
     private Iterable<Point2D> range(Node h, RectHV rect) {
-        // If h is horizontal and h.right() or h.left()
         if (h.coordinate == false) {
-            RectHV rHl = new RectHV(0.0, 0.0, h.p.x(), 1.0);
+            RectHV rHl = null;
+            RectHV rHr = null;
+            if (h.parent == null) {
+                h.rect = new RectHV(0.0, 0.0, 1.0, 1.0);
+                rHl = new RectHV(0.0, 0.0, h.p.x(), 1.0);
+                rHr = new RectHV(h.p.x(), h.rect.ymin(), h.rect.xmax(), h.rect.ymax());
+            } else if (h.parent != null) {
+                rHl = new RectHV(h.parent.rect.xmin(), h.parent.rect.ymin(),
+                        h.parent.rect.xmax(), h.parent.p.y());
+                rHr = new RectHV(h.p.x(), h.rect.ymin(), h.rect.xmax(), h.rect.ymax());
+            }
             if (rHl.intersects(rect) && h.left != null) {
+                h.left.rect = rHl;
                 range(h.left, rect);
             } else if (h.left == null) {
                 for (Node n : keys(h)) {
                     if (rect.contains(n.p) && (!points.contains(n.p))) points.add(n.p);
                 }
             }
-            RectHV rHr = new RectHV(h.p.x(), 0.0, 1.0, 1.0);//<------
             if (rHr.intersects(rect) && h.right != null) {
+                h.right.rect = rHr;
                 range(h.right, rect);
             } else if (h.right == null) {
                 for (Node n : keys(h)) {
                     if (rect.contains(n.p) && (!points.contains(n.p))) points.add(n.p);
                 }
             }
-        } else if (h.coordinate) {
-            RectHV rHl = new RectHV(0.0, 0.0, 1.0, h.p.y());
+        }
+        if (h.coordinate) {
+            RectHV rHl = new RectHV(h.rect.xmin(), h.rect.ymin(), h.p.x(), h.rect.ymax());
             if (rHl.intersects(rect) && h.left != null) {
+                h.left.rect = rHl;
                 range(h.left, rect);
             } else if (h.left == null) {
                 for (Node n : keys(h)) {
                     if (rect.contains(n.p) && (!points.contains(n.p))) points.add(n.p);
                 }
             }
-            RectHV rHr = new RectHV(0.0, h.p.y(), 1.0, 1.0);
+            RectHV rHr = new RectHV(h.p.x(), h.rect.ymin(), h.rect.xmax(), h.rect.ymax());
             if (rHr.intersects(rect) && h.right != null) {
+                h.right.rect = rHr;
                 range(h.right, rect);
             } else if (h.right == null) {
                 for (Node n : keys(h)) {
@@ -381,8 +394,13 @@ public class KdTree {
         for (Point2D p : s) {
             k.insert(p);
         }
-//        RectHV r = new RectHV(0.4, 0.3, 0.6, 0.7);
-//        StdOut.println("Here is the point in your rectangle : " + k.range(r));
+        // RectHV r = new RectHV(0.4, 0.3, 0.6, 0.7);
+        // RectHV r = new RectHV(0.6, 0.1, 0.8, 0.3);   Just want to see the point 0.7, 0.2
+        RectHV r = new RectHV(0.0, 0.0, 1.0, 1.0);
+//        for (Point2D p : k.range(r)) {
+//            StdOut.println("Here is the points in above rectangle: " + p);
+//        }
+        StdOut.println("Here is the point in your rectangle : " + k.range(r));
         k.draw();
 //        for (int i = 0; i < 20; i++) {
 //            Point2D p = new Point2D(StdRandom.uniform(0.0, 1.0), StdRandom.uniform(0.0, 1.0));
