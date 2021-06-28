@@ -119,9 +119,12 @@ public class KdTree {
             StdDraw.line(rectHV.xmin(), h.p.y(), rectHV.xmax(), h.p.y());
             if (h.left!=null) {
                 // the sub rectangles are different depending on parent axis orientation
+                h.left.rect = new RectHV(rectHV.xmin(), rectHV.ymin(), rectHV.xmax(), h.p.y());
+                draw(h.left, h.left.rect);
             }
             if (h.right!=null) {
-
+                h.right.rect = new RectHV(rectHV.xmin(), h.p.y(), rectHV.xmax(), rectHV.ymax());
+                draw(h.right, h.right.rect);
             }
         }
 
