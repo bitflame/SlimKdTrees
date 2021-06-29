@@ -200,7 +200,9 @@ public class KdTree {
 //        double xmaxCounter = 0.0;
 //        double ymaxCounter = 0.0;
 /* I may have to and be able to use these  now to make sure I do not look at rectangles I do not need to. Once the rect
-* is covered, I am done. Right now, it might have too many rectangles to count. It might! Might just work. */
+* is covered, I am done. Right now, it might have too many rectangles to count. It might! Might just work. Also as you
+* pull off nodes from intersectionRectangles, you can check to see if left and right intersect, and if so, just ignor the
+* parent and not check for points since it is redundant. You can save time and processing */
         for (Node node : intersectingRectangles) {
             for (Node n : keys(node)) {
                 if (rect.contains(n.p) && (!points.contains(n.p))) points.add(n.p);
@@ -388,10 +390,9 @@ public class KdTree {
             k.insert(p);
         }
         // RectHV r = new RectHV(0.8, 0.5, 1.0, 0.7);
-        RectHV r = new RectHV(0.1, 0.1, 0.8, 0.6);   // Just want to see the point 0.7, 0.2
-        /* But this is what I get : [(0.2, 0.3), (0.5, 0.4)] */
+        // RectHV r = new RectHV(0.1, 0.1, 0.8, 0.6);    Just want to see the point 0.7, 0.2
         // RectHV r = new RectHV(0.0, 0.0, 1.0, 1.0);
-        //RectHV r = new RectHV(0.7, 0.2, 1.0, 1.0);
+        RectHV r = new RectHV(0.7, 0.2, 1.0, 1.0);
         //StdOut.println("Does r contain the first node? " + r.contains(p1));
 //        for (Point2D p : k.range(r)) {
 //            StdOut.println("Here is the points in above rectangle: " + p);
