@@ -150,8 +150,14 @@ public class KdTree {
         /*1- Does h intersect with rect? if no, do not check its subtrees it is over; you are done with it
          * 2- Does h cover all of the rect area?
          * 3- Do h's subtrees cover all the rect area also? if so, then move on to those */
-
+        if (h.left == null) {
+            if (rect.contains(h.p) && !points.contains(h.p)) points.add(h.p);
+        }
+        if (h.right == null) {
+            if (rect.contains(h.p) && !points.contains(h.p)) points.add(h.p);
+        }
         if (h.coordinate == false) {
+            if (rect.contains(h.p) && !points.contains(h.p)) points.add(h.p);
             if (h.left != null) rHl = new RectHV(h.nodeRect.xmin(), h.nodeRect.ymin(), h.p.x(),
                     h.nodeRect.ymax());
             if (h.right != null) rHr = new RectHV(h.p.x(), h.nodeRect.ymin(), h.nodeRect.xmax(),
@@ -172,8 +178,12 @@ public class KdTree {
             }
         }
         if (h.coordinate) {  /// If h does not have a rectangle, recreate it. If it does use it.
+            if (rect.contains(h.p) && !points.contains(h.p)) points.add(h.p);
             RectHV rHl = new RectHV(h.nodeRect.xmin(), h.nodeRect.ymin(), h.p.x(), h.nodeRect.ymax());
             RectHV rHr = new RectHV(h.p.x(), h.nodeRect.ymin(), h.nodeRect.xmax(), h.nodeRect.ymax());
+            if (rHl.intersects(rect) && h.left == null) {
+                if (rect.contains(h.p) && !points.contains(h.p)) points.add(h.p);
+            }
             if (rHl.intersects(rect) && h.left != null) {
                 intersectingRectangles.push(h.left);
                 h.left.parent = h;
@@ -181,6 +191,9 @@ public class KdTree {
                 range(h.left, rect);
                     /* put the intersecting rectangles in a stack; later pull them out 1 by 1 until the entire
                     rectangle is covered */
+            }
+            if (rHr.intersects(rect) && h.right == null) {
+                if (rect.contains(h.p) && !points.contains(h.p)) points.add(h.p);
             }
             if (rHr.intersects(rect) && h.right != null) {
                 h.right.parent = h;
@@ -194,9 +207,9 @@ public class KdTree {
 //        double xmaxCounter = 0.0;
 //        double ymaxCounter = 0.0;
         for (Node node : intersectingRectangles) {
-            if (rect.contains(node.p) && (!points.contains(node.p))) points.add(node.p);
-//            if (xminCounter < rect.xmin() && xmaxCounter > rect.xmax() && yminCounter < rect.ymin() &&
-//                    ymaxCounter > rect.ymax()) break;
+            for (Node n : keys(node)) {
+                if (rect.contains(n.p) && (!points.contains(n.p))) points.add(n.p);
+            }
         }
         return points;
     }
@@ -380,10 +393,11 @@ public class KdTree {
             k.insert(p);
         }
         // RectHV r = new RectHV(0.8, 0.5, 1.0, 0.7);
-        //RectHV r = new RectHV(0.1, 0.1, 0.8, 0.6);   // Just want to see the point 0.7, 0.2
+        RectHV r = new RectHV(0.1, 0.1, 0.8, 0.6);   // Just want to see the point 0.7, 0.2
+        /* But this is what I get : [(0.2, 0.3), (0.5, 0.4)] */
         // RectHV r = new RectHV(0.0, 0.0, 1.0, 1.0);
-        RectHV r = new RectHV(0.7, 0.2, 1.0, 1.0);
-        StdOut.println("Does r contain the first node? " + r.contains(p1));
+        //RectHV r = new RectHV(0.7, 0.2, 1.0, 1.0);
+        //StdOut.println("Does r contain the first node? " + r.contains(p1));
 //        for (Point2D p : k.range(r)) {
 //            StdOut.println("Here is the points in above rectangle: " + p);
 //        }
