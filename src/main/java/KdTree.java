@@ -174,6 +174,7 @@ public class KdTree {
     }
 
     private Iterable<Point2D> range(Node h, RectHV rect) {
+        ArrayList<Point2D> intersectingSubtrees = new ArrayList<>();
         if (h.coordinate == false) {
             RectHV rHl = null;
             RectHV rHr = null;
@@ -185,8 +186,27 @@ public class KdTree {
                 rHl = new RectHV(h.parent.rect.xmin(), h.parent.rect.ymin(),
                         h.parent.rect.xmax(), h.parent.p.y());
                 rHr = new RectHV(h.p.x(), h.rect.ymin(), h.rect.xmax(), h.rect.ymax());
+                /* either all the points are in one subtree or in both. Make a collection of nodes / subtrees
+                 * that their sibling does not intersect. Then look for points that are in rect within this collection.
+                 * There should not be more than four of them.  - problem is rectangles do not have points n. Better
+                 * solution: you need to find the rectangle(s) that contain all the points of rect, then get the keys
+                 * from their nodes. So you need to save a collection of these rectangles and their associated nodes */
+                if (rHl.intersects(rect) && (!rHr.intersects(rect))) {
+                    for (Node n: keys(h.left)){
+                        if (rect.contains(n.p) && (!points.contains(n.p))){
+                            points.add(n.p);
+                        }
+                    }
+                }
+                if (rHr.intersects(rect) && (!rHl.intersects(rect))) {
+                    for (Node n: keys(h.left)){
+                        if (rect.contains(n.p) && (!points.contains(n.p))){
+                            points.add(n.p);
+                        }
+                    }
+                }
             }
-            // check for points when h.rect does not intersect but h.parent.rect does
+            // check for points when h.right.rec does not intersect but h.left does. Look for borders
 
             if (rHl.intersects(rect) && h.left != null) {
                 h.left.rect = rHl;
@@ -224,6 +244,7 @@ public class KdTree {
                     if (rect.contains(n.p) && (!points.contains(n.p))) points.add(n.p);
                 }
             }
+
         }
         return points;
     }
