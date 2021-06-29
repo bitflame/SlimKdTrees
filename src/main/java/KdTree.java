@@ -174,7 +174,11 @@ public class KdTree {
     }
 
     private Iterable<Point2D> range(Node h, RectHV rect) {
-        ArrayList<Point2D> intersectingSubtrees = new ArrayList<>();
+        Stack<Node> intersectingRectangles = new Stack<>();
+        /*1- Does h intersect with rect? if no, do not check its subtrees it is over; you are done with it
+         * 2- Does h cover all of the rect area?
+         * 3- Do h's subtrees cover all the rect area also? if so, then move on to those */
+
         if (h.coordinate == false) {
             RectHV rHl = null;
             RectHV rHr = null;
@@ -186,64 +190,51 @@ public class KdTree {
                 rHl = new RectHV(h.parent.rect.xmin(), h.parent.rect.ymin(),
                         h.parent.rect.xmax(), h.parent.p.y());
                 rHr = new RectHV(h.p.x(), h.rect.ymin(), h.rect.xmax(), h.rect.ymax());
-                /* either all the points are in one subtree or in both. Make a collection of nodes / subtrees
-                 * that their sibling does not intersect. Then look for points that are in rect within this collection.
-                 * There should not be more than four of them.  - problem is rectangles do not have points n. Better
-                 * solution: you need to find the rectangle(s) that contain all the points of rect, then get the keys
-                 * from their nodes. So you need to save a collection of these rectangles and their associated nodes */
-                if (rHl.intersects(rect) && (!rHr.intersects(rect))) {
-                    for (Node n: keys(h.left)){
-                        if (rect.contains(n.p) && (!points.contains(n.p))){
-                            points.add(n.p);
-                        }
-                    }
-                }
-                if (rHr.intersects(rect) && (!rHl.intersects(rect))) {
-                    for (Node n: keys(h.left)){
-                        if (rect.contains(n.p) && (!points.contains(n.p))){
-                            points.add(n.p);
-                        }
-                    }
-                }
             }
-            // check for points when h.right.rec does not intersect but h.left does. Look for borders
-
-            if (rHl.intersects(rect) && h.left != null) {
-                h.left.rect = rHl;
-                range(h.left, rect);
-            } else if (h.left == null) {
-                for (Node n : keys(h)) {
-                    if (rect.contains(n.p) && (!points.contains(n.p))) points.add(n.p);
+            while (h.rect.xmin() < rect.xmin() && h.rect.ymin() < rect.ymin()) {
+                if (rHl.intersects(rect)) {
+                    intersectingRectangles.push(h.left);
+                    range(h.left, rect);
+                    /* put the intersecting rectangles in a stack; later pull them out 1 by 1 until the entire
+                    rectangle is covered */
                 }
-            }
-            if (rHr.intersects(rect) && h.right != null) {
-                h.right.rect = rHr;
-                range(h.right, rect);
-            } else if (h.right == null) {
-                for (Node n : keys(h)) {
-                    if (rect.contains(n.p) && (!points.contains(n.p))) points.add(n.p);
+                if (rHr.intersects(rect)) {
+                    intersectingRectangles.push(h.right);
+                    range(h.right, rect);
                 }
             }
         }
         if (h.coordinate) {
             RectHV rHl = new RectHV(h.rect.xmin(), h.rect.ymin(), h.p.x(), h.rect.ymax());
-            if (rHl.intersects(rect) && h.left != null) {
-                h.left.rect = rHl;
-                range(h.left, rect);
-            } else if (h.left == null) {
-                for (Node n : keys(h)) {
-                    if (rect.contains(n.p) && (!points.contains(n.p))) points.add(n.p);
-                }
-            }
             RectHV rHr = new RectHV(h.p.x(), h.rect.ymin(), h.rect.xmax(), h.rect.ymax());
-            if (rHr.intersects(rect) && h.right != null) {
-                h.right.rect = rHr;
-                range(h.right, rect);
-            } else if (h.right == null) {
-                for (Node n : keys(h)) {
-                    if (rect.contains(n.p) && (!points.contains(n.p))) points.add(n.p);
+            while (h.rect.xmin() < rect.xmin() && h.rect.ymin() < rect.ymin()) {
+                if (rHl.intersects(rect)) {
+                    intersectingRectangles.push(h.left);
+                    range(h.left, rect);
+                    /* put the intersecting rectangles in a stack; later pull them out 1 by 1 until the entire
+                    rectangle is covered */
+                }
+                if (rHr.intersects(rect)) {
+                    intersectingRectangles.push(h.right);
+                    range(h.right, rect);
                 }
             }
+        }
+        double xminCounter = 1.0;
+        double yminCounter = 1.0;
+        double xmaxCounter = 0.0;
+        double ymaxCounter = 0.0;
+        for (Node node : intersectingRectangles) {
+            // does rect contain any of the points in node?
+            /* did I cover all the edges of rect? i.e. xmin - xmax and ymin - ymax? if so, stop! if not, keep
+            pulling*/
+            if (node.rect.xmin() < xminCounter) xminCounter = node.rect.xmin();
+            if (node.rect.ymin() < yminCounter) yminCounter = node.rect.ymin();
+            if (node.rect.xmax() > xmaxCounter) xmaxCounter = node.rect.ymax();
+            if (node.rect.ymax() > ymaxCounter) ymaxCounter = node.rect.ymax();
+            if (rect.contains(node.p) && (!points.contains(node.p))) points.add(node.p);
+            if (xminCounter < rect.xmin() && xmaxCounter > rect.xmax() && yminCounter < rect.ymin() &&
+                    ymaxCounter > rect.ymax()) break;
 
         }
         return points;
