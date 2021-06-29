@@ -9,20 +9,19 @@ public class KdTree {
     private Queue<Node> q = new Queue<>();
     private Queue<Point2D> pq = new Queue<>();
     ArrayList<Point2D> points = new ArrayList<>();
+    Stack<Node> intersectingRectangles = new Stack<>();
 
     private static class Node implements Comparable<Node> {
         Point2D p; // key
         Node left, right, parent; // subtrees
         int n = 0; // # nodes in this subtree
         boolean coordinate; // 0 means horizontal
-        private RectHV rect; // the axis-aligned rectangle corresponding to this node
 
 
         public Node(Point2D p, int n, boolean coordinate, Node parent) {
             this.p = p;
             this.coordinate = coordinate;
             this.parent = parent;
-            this.rect = new RectHV(0.0, 0.0, 1.0, 1.0);
             this.n = n;
         }
 
@@ -91,6 +90,7 @@ public class KdTree {
     }
 
     private void draw(Node h, RectHV rectHV) {
+        RectHV tempRect = null;
         if (h.coordinate == false) {
             StdDraw.setPenColor(StdDraw.BLACK);
             StdDraw.setPenRadius(0.012);
@@ -99,16 +99,16 @@ public class KdTree {
             StdDraw.setPenRadius(0.003);
             StdDraw.setPenColor(StdDraw.RED);
             // StdDraw.line(h.p.x(), rectHV.ymin(), h.p.x(), rectHV.ymax());
-            StdDraw.line(h.p.x(), h.rect.ymin(), h.p.x(), h.rect.ymax());
+            StdDraw.line(h.p.x(), rectHV.ymin(), h.p.x(), rectHV.ymax());
             /* if h is less than its parent y goes from 0 to h.parent.y , if h is greater than its parent, y goes
              * from h.parent.y to 1.0 */
             if (h.left != null) {
-                h.left.rect = new RectHV(rectHV.xmin(), rectHV.ymin(), h.p.x(), rectHV.ymax());
-                draw(h.left, h.left.rect);
+                tempRect = new RectHV(rectHV.xmin(), rectHV.ymin(), h.p.x(), rectHV.ymax());
+                draw(h.left, tempRect);
             }
             if (h.right != null) {
-                h.right.rect = new RectHV(h.p.x(), rectHV.ymin(), rectHV.xmax(), rectHV.ymax());
-                draw(h.right, h.right.rect);
+                tempRect = new RectHV(h.p.x(), rectHV.ymin(), rectHV.xmax(), rectHV.ymax());
+                draw(h.right, tempRect);
             }
         } else if (h.coordinate) {
             StdDraw.setPenColor(StdDraw.BLACK);
@@ -119,12 +119,12 @@ public class KdTree {
             StdDraw.line(rectHV.xmin(), h.p.y(), rectHV.xmax(), h.p.y());
             if (h.left != null) {
                 // the sub rectangles are different depending on parent axis orientation
-                h.left.rect = new RectHV(rectHV.xmin(), rectHV.ymin(), rectHV.xmax(), h.p.y());
-                draw(h.left, h.left.rect);
+                tempRect = new RectHV(rectHV.xmin(), rectHV.ymin(), rectHV.xmax(), h.p.y());
+                draw(h.left, tempRect);
             }
             if (h.right != null) {
-                h.right.rect = new RectHV(rectHV.xmin(), h.p.y(), rectHV.xmax(), rectHV.ymax());
-                draw(h.right, h.right.rect);
+                tempRect = new RectHV(rectHV.xmin(), h.p.y(), rectHV.xmax(), rectHV.ymax());
+                draw(h.right, tempRect);
             }
         }
 
@@ -174,47 +174,56 @@ public class KdTree {
     }
 
     private Iterable<Point2D> range(Node h, RectHV rect) {
-        Stack<Node> intersectingRectangles = new Stack<>();
+
         /*1- Does h intersect with rect? if no, do not check its subtrees it is over; you are done with it
          * 2- Does h cover all of the rect area?
          * 3- Do h's subtrees cover all the rect area also? if so, then move on to those */
-
+        RectHV parentRect = null;
         if (h.coordinate == false) {
             RectHV rHl = null;
             RectHV rHr = null;
             if (h.parent == null) {
-                h.rect = new RectHV(0.0, 0.0, 1.0, 1.0);
+                parentRect = new RectHV(0.0, 0.0, 1.0, 1.0);
                 rHl = new RectHV(0.0, 0.0, h.p.x(), 1.0);
-                rHr = new RectHV(h.p.x(), h.rect.ymin(), h.rect.xmax(), h.rect.ymax());
+                rHr = new RectHV(h.p.x(), parentRect.ymin(), parentRect.xmax(), parentRect.ymax());
             } else if (h.parent != null) {
-                rHl = new RectHV(h.parent.rect.xmin(), h.parent.rect.ymin(),
-                        h.parent.rect.xmax(), h.parent.p.y());
-                rHr = new RectHV(h.p.x(), h.rect.ymin(), h.rect.xmax(), h.rect.ymax());
+                /* rHl = new RectHV(h.parent.rect.xmin(), h.parent.rect.ymin(),
+                        h.parent.rect.xmax(), h.parent.p.y()); */
+                rHl = new RectHV(parentRect.xmin(), parentRect.ymin(), h.p.x(), parentRect.ymax());
+                rHr = new RectHV(h.p.x(), parentRect.ymin(), parentRect.xmax(), parentRect.ymax());
             }
-            while (h.rect.xmin() < rect.xmin() && h.rect.ymin() < rect.ymin()) {
-                if (rHl.intersects(rect)) {
+            intersectingRectangles.push(h);
+            if (parentRect.xmin() < rect.xmin() && parentRect.xmax() > rect.xmax()) {
+                if (rHl.intersects(rect) && rHr.intersects(rect)) intersectingRectangles.pop();
+                if (rHl.intersects(rect) && h.left != null) {
+                    parentRect = rHl;
                     intersectingRectangles.push(h.left);
                     range(h.left, rect);
                     /* put the intersecting rectangles in a stack; later pull them out 1 by 1 until the entire
                     rectangle is covered */
                 }
-                if (rHr.intersects(rect)) {
+                if (rHr.intersects(rect) && h.right != null) {
+                    parentRect = rHr;
                     intersectingRectangles.push(h.right);
                     range(h.right, rect);
                 }
             }
         }
         if (h.coordinate) {
-            RectHV rHl = new RectHV(h.rect.xmin(), h.rect.ymin(), h.p.x(), h.rect.ymax());
-            RectHV rHr = new RectHV(h.p.x(), h.rect.ymin(), h.rect.xmax(), h.rect.ymax());
-            while (h.rect.xmin() < rect.xmin() && h.rect.ymin() < rect.ymin()) {
-                if (rHl.intersects(rect)) {
+            RectHV rHl = new RectHV(parentRect.xmin(), parentRect.ymin(), h.p.x(), parentRect.ymax());
+            RectHV rHr = new RectHV(h.p.x(), parentRect.ymin(), parentRect.xmax(), parentRect.ymax());
+            intersectingRectangles.push(h);
+            if (parentRect.ymin() < rect.ymin() && parentRect.ymax() > rect.ymax()) {
+                if (rHl.intersects(rect) && rHr.intersects(rect)) intersectingRectangles.pop();
+                if (rHl.intersects(rect) && h.left != null) {
+                    parentRect = rHl;
                     intersectingRectangles.push(h.left);
                     range(h.left, rect);
                     /* put the intersecting rectangles in a stack; later pull them out 1 by 1 until the entire
                     rectangle is covered */
                 }
-                if (rHr.intersects(rect)) {
+                if (rHr.intersects(rect) && h.right != null) {
+                    parentRect = rHr;
                     intersectingRectangles.push(h.right);
                     range(h.right, rect);
                 }
@@ -225,17 +234,9 @@ public class KdTree {
         double xmaxCounter = 0.0;
         double ymaxCounter = 0.0;
         for (Node node : intersectingRectangles) {
-            // does rect contain any of the points in node?
-            /* did I cover all the edges of rect? i.e. xmin - xmax and ymin - ymax? if so, stop! if not, keep
-            pulling*/
-            if (node.rect.xmin() < xminCounter) xminCounter = node.rect.xmin();
-            if (node.rect.ymin() < yminCounter) yminCounter = node.rect.ymin();
-            if (node.rect.xmax() > xmaxCounter) xmaxCounter = node.rect.ymax();
-            if (node.rect.ymax() > ymaxCounter) ymaxCounter = node.rect.ymax();
             if (rect.contains(node.p) && (!points.contains(node.p))) points.add(node.p);
             if (xminCounter < rect.xmin() && xmaxCounter > rect.xmax() && yminCounter < rect.ymin() &&
                     ymaxCounter > rect.ymax()) break;
-
         }
         return points;
     }
@@ -274,35 +275,13 @@ public class KdTree {
         } else {
             int cmp = newNode.compareTo(h);
             if (cmp < 0) {
+                newNode.parent = h;
                 h.left = insert(h.left, newNode);
             } else if (cmp > 0) {
+                newNode.parent = h;
                 h.right = insert(h.right, newNode);
             }
         }
-        /* Create a new node here with p, and use Node compareTo() to add it to
-         * the right branch something like:
-         * if h.coordinate == false and newNode
-        if (isHorizontal(h) && p.x() < h.p.x()) {
-            h.left = insert(h.left, p);
-            h.left.rect = new RectHV(h.rect.xmin(), h.rect.ymin(), h.p.x(), h.rect.ymax());
-            h.left.parent = h;
-            makeVertical(h.left);
-        } else if (isHorizontal(h) && p.x() >= h.p.x()) {
-            h.right = insert(h.right, p);
-            h.right.rect = new RectHV(h.p.x(), h.rect.ymin(), h.rect.xmax(), h.rect.ymax());
-            h.right.parent = h;
-            makeVertical(h.right);
-        } else if (isVertical(h) && p.y() < h.p.y()) {
-            h.left = insert(h.left, p);
-            h.left.rect = new RectHV(h.rect.xmin(), h.rect.ymin(), h.rect.xmax(), h.p.y());
-            h.left.parent = h;
-            makeHorizontal(h.left);
-        } else if (isVertical(h) && p.y() >= h.p.y()) {
-            h.right = insert(h.right, p);
-            h.right.rect = new RectHV(h.rect.xmin(), h.p.y(), h.rect.xmax(), h.rect.ymax());
-            h.right.parent = h;
-            makeHorizontal(h.right);
-        }*/
         int leftN = 0;
         if (h.left != null) {
             leftN = h.left.n;
@@ -325,26 +304,57 @@ public class KdTree {
         if (root == null) throw new IllegalArgumentException("The tree is empty.");
         /* if the closest point discovered so far is closer than the distance between the query point and the rectangle
         corresponding to a node, there is no need to explore that node (or its subtrees). */
+        RectHV initialRec = new RectHV(0.0, 0.0, 1.0, 1.0);
         Point2D nearestNeig = root.p;
-        return nearest(root, p, nearestNeig);
+        return nearest(root, p, nearestNeig, initialRec);
     }
 
-    private Point2D nearest(Node n, Point2D p, Point2D nearstP) {
-        if (n.left != null) {
-            if (n.left.rect.distanceSquaredTo(p) < p.distanceSquaredTo(nearstP)) {
-                if (n.left.p.distanceSquaredTo(p) < nearstP.distanceSquaredTo(p)) {
-                    nearstP = n.left.p;
+    private Point2D nearest(Node h, Point2D p, Point2D nearstP, RectHV rect) {
+        RectHV rHl = null;
+        RectHV rHr = null;
+        if (h.coordinate == false) {
+            if (h.parent == null) {
+                rHl = new RectHV(0.0, 0.0, h.p.x(), 1.0);
+                rHr = new RectHV(h.p.x(), rect.ymin(), rect.xmax(), rect.ymax());
+            } else if (h.parent != null) {
+                rHl = new RectHV(rect.xmin(), rect.ymin(), h.p.x(), rect.ymax());
+                rHr = new RectHV(h.p.x(), rect.ymin(), rect.xmax(), rect.ymax());
+            }
+            if (h.left != null) {
+                if (rHl.distanceSquaredTo(p) < p.distanceSquaredTo(nearstP)) {
+                    if (h.left.p.distanceSquaredTo(p) < nearstP.distanceSquaredTo(p)) {
+                        nearstP = h.left.p;
+                    }
+                }
+                nearstP = nearest(h.left, p, nearstP, rHl);
+            }
+            if (h.right != null) {
+                if (rect.distanceSquaredTo(p) < p.distanceSquaredTo(nearstP)) {
+                    if (h.right.p.distanceSquaredTo(p) < nearstP.distanceSquaredTo(p)) {
+                        nearstP = h.right.p;
+                    }
                 }
             }
-            nearstP = nearest(n.left, p, nearstP);
+            nearstP = nearest(h.right, p, nearstP, rHr);
         }
-        if (n.right != null) {
-            if (n.right.rect.distanceSquaredTo(p) < p.distanceSquaredTo(nearstP)) {
-                if (n.right.p.distanceSquaredTo(p) < nearstP.distanceSquaredTo(p)) {
-                    nearstP = n.right.p;
+        if (h.coordinate) {
+            rHl = new RectHV(rect.xmin(), rect.ymin(), h.p.x(), rect.ymax());
+            rHr = new RectHV(h.p.x(), rect.ymin(), rect.xmax(), rect.ymax());
+            if (h.left != null) {
+                if (rHl.distanceSquaredTo(p) < p.distanceSquaredTo(nearstP)) {
+                    if (h.left.p.distanceSquaredTo(p) < nearstP.distanceSquaredTo(p)) {
+                        nearstP = h.left.p;
+                    }
+                }
+                nearstP = nearest(h.left, p, nearstP, rHl);
+            }
+            if (h.right != null) {
+                if (rect.distanceSquaredTo(p) < p.distanceSquaredTo(nearstP)) {
+                    if (h.right.p.distanceSquaredTo(p) < nearstP.distanceSquaredTo(p)) {
+                        nearstP = h.right.p;
+                    }
                 }
             }
-            nearstP = nearest(n.right, p, nearstP);
         }
         return nearstP;
     }
@@ -409,8 +419,8 @@ public class KdTree {
             k.insert(p);
         }
         // RectHV r = new RectHV(0.4, 0.3, 0.6, 0.7);
-        // RectHV r = new RectHV(0.6, 0.1, 0.8, 0.3);   Just want to see the point 0.7, 0.2
-        RectHV r = new RectHV(0.0, 0.0, 1.0, 1.0);
+        RectHV r = new RectHV(0.6, 0.1, 0.8, 0.3);   // Just want to see the point 0.7, 0.2
+        // RectHV r = new RectHV(0.0, 0.0, 1.0, 1.0);
 //        for (Point2D p : k.range(r)) {
 //            StdOut.println("Here is the points in above rectangle: " + p);
 //        }
