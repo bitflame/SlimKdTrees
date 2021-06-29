@@ -27,8 +27,6 @@ public class KdTree {
             this.n = n;
         }
 
-        /* Check to make sure this method checks the coordinate of what is already on the org.example.KDTree with
-        the new node not the other way around */
         @Override
         public int compareTo(Node h) {
             double thisX = this.p.x();
@@ -147,9 +145,6 @@ public class KdTree {
 
     private Iterable<Point2D> range(Node h, RectHV rect) {
 
-        /*1- Does h intersect with rect? if no, do not check its subtrees it is over; you are done with it
-         * 2- Does h cover all of the rect area?
-         * 3- Do h's subtrees cover all the rect area also? if so, then move on to those */
         if (h.left == null) {
             if (rect.contains(h.p) && !points.contains(h.p)) points.add(h.p);
         }
@@ -167,8 +162,6 @@ public class KdTree {
                 h.left.parent = h;
                 h.left.nodeRect = rHl;
                 range(h.left, rect);
-                    /* put the intersecting rectangles in a stack; later pull them out 1 by 1 until the entire
-                    rectangle is covered */
             }
             if (rHr.intersects(rect) && h.right != null) {
                 h.right.parent = h;
@@ -206,6 +199,8 @@ public class KdTree {
 //        double yminCounter = 1.0;
 //        double xmaxCounter = 0.0;
 //        double ymaxCounter = 0.0;
+/* I may have to and be able to use these  now to make sure I do not look at rectangles I do not need to. Once the rect
+* is covered, I am done. Right now, it might have too many rectangles to count. It might! Might just work. */
         for (Node node : intersectingRectangles) {
             for (Node n : keys(node)) {
                 if (rect.contains(n.p) && (!points.contains(n.p))) points.add(n.p);
