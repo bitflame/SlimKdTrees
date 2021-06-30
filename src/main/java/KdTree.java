@@ -199,10 +199,10 @@ public class KdTree {
 //        double yminCounter = 1.0;
 //        double xmaxCounter = 0.0;
 //        double ymaxCounter = 0.0;
-/* I may have to and be able to use these  now to make sure I do not look at rectangles I do not need to. Once the rect
-* is covered, I am done. Right now, it might have too many rectangles to count. It might! Might just work. Also as you
-* pull off nodes from intersectionRectangles, you can check to see if left and right intersect, and if so, just ignor the
-* parent and not check for points since it is redundant. You can save time and processing */
+        /* I may have to and be able to use these  now to make sure I do not look at rectangles I do not need to. Once the rect
+         * is covered, I am done. Right now, it might have too many rectangles to count. It might! Might just work. Also as you
+         * pull off nodes from intersectionRectangles, you can check to see if left and right intersect, and if so, just ignor the
+         * parent and not check for points since it is redundant. You can save time and processing */
         for (Node node : intersectingRectangles) {
             for (Node n : keys(node)) {
                 if (rect.contains(n.p) && (!points.contains(n.p))) points.add(n.p);
@@ -210,27 +210,6 @@ public class KdTree {
         }
         return points;
     }
-
-    private static boolean isHorizontal(Node x) {
-        if (x == null) return false;
-        return x.coordinate == false;
-    }
-
-    private static boolean isVertical(Node x) {
-        if (x == null) return false;
-        return x.coordinate == true;
-    }
-
-    private void makeVertical(Node x) {
-        if (x == null) return;
-        x.coordinate = true;
-    }
-
-    private void makeHorizontal(Node x) {
-        if (x == null) return;
-        x.coordinate = false;
-    }
-
 
     public void insert(Point2D p) {
         if (p == null) throw new IllegalArgumentException("You can not insert null object" +
@@ -276,20 +255,23 @@ public class KdTree {
         corresponding to a node, there is no need to explore that node (or its subtrees). */
         RectHV initialRec = new RectHV(0.0, 0.0, 1.0, 1.0);
         Point2D nearestNeig = root.p;
-        return nearest(root, p, nearestNeig, initialRec);
+        root.nodeRect=initialRec;
+        return nearest(root, p, nearestNeig);
     }
 
-    private Point2D nearest(Node h, Point2D p, Point2D nearstP, RectHV rect) {
+    private Point2D nearest(Node h, Point2D p, Point2D nearstP) {
         RectHV rHl = null;
         RectHV rHr = null;
+        if (h == null) return nearstP;
         if (h.coordinate == false) {
             if (h.parent == null) {
                 rHl = new RectHV(0.0, 0.0, h.p.x(), 1.0);
-                rHr = new RectHV(h.p.x(), rect.ymin(), rect.xmax(), rect.ymax());
+                rHr = new RectHV(h.p.x(), 0.0, 1.0, 1.0);
             } else if (h.parent != null) {
                 // I have to rebuild the h rectangle here or save it in the node from previous round.
-                rHl = new RectHV(rect.xmin(), rect.ymin(), h.p.x(), rect.ymax());
-                rHr = new RectHV(h.p.x(), rect.ymin(), rect.xmax(), rect.ymax());
+                // How should I handle points like 0.0,0.5? there is no left rectangle if (h.x() == 0) do what?
+                rHl = new RectHV(h.nodeRect.xmin(), h.nodeRect.ymin(), h.p.x(), h.nodeRect.ymax());
+                rHr = new RectHV(h.p.x(), h.nodeRect.ymin(), h.nodeRect.xmax(), h.nodeRect.ymax());
             }
             if (h.left != null) {
                 if (rHl.distanceSquaredTo(p) < p.distanceSquaredTo(nearstP)) {
@@ -297,30 +279,37 @@ public class KdTree {
                         nearstP = h.left.p;
                     }
                 }
-                nearstP = nearest(h.left, p, nearstP, rHl);
+                h.left.parent=h;
+                h.left.nodeRect=rHl;
+                nearstP = nearest(h.left, p, nearstP);
             }
             if (h.right != null) {
-                if (rect.distanceSquaredTo(p) < p.distanceSquaredTo(nearstP)) {
+                if (rHr.distanceSquaredTo(p) < p.distanceSquaredTo(nearstP)) {
                     if (h.right.p.distanceSquaredTo(p) < nearstP.distanceSquaredTo(p)) {
                         nearstP = h.right.p;
                     }
                 }
             }
-            nearstP = nearest(h.right, p, nearstP, rHr);
+            h.right.parent=h;
+            h.right.nodeRect=rHr;
+            nearstP = nearest(h.right, p, nearstP);
         }
         if (h.coordinate) {
-            rHl = new RectHV(rect.xmin(), rect.ymin(), h.p.x(), rect.ymax());
-            rHr = new RectHV(h.p.x(), rect.ymin(), rect.xmax(), rect.ymax());
+            rHl = new RectHV(h.nodeRect.xmin(), h.nodeRect.ymin(), h.nodeRect.xmax(), h.p.y());
+            rHr = new RectHV(h.nodeRect.xmin(), h.p.y(), h.nodeRect.xmax(), h.nodeRect.ymax());
+            // rHr = new RectHV(h.p.x(),h.nodeRect.ymin(),h.nodeRect.xmax(),h.nodeRect.ymax());
             if (h.left != null) {
                 if (rHl.distanceSquaredTo(p) < p.distanceSquaredTo(nearstP)) {
                     if (h.left.p.distanceSquaredTo(p) < nearstP.distanceSquaredTo(p)) {
                         nearstP = h.left.p;
                     }
                 }
-                nearstP = nearest(h.left, p, nearstP, rHl);
+                h.left.parent=h;
+                h.left.nodeRect=rHl;
+                nearstP = nearest(h.left, p, nearstP);
             }
             if (h.right != null) {
-                if (rect.distanceSquaredTo(p) < p.distanceSquaredTo(nearstP)) {
+                if (rHr.distanceSquaredTo(p) < p.distanceSquaredTo(nearstP)) {
                     if (h.right.p.distanceSquaredTo(p) < nearstP.distanceSquaredTo(p)) {
                         nearstP = h.right.p;
                     }
@@ -369,7 +358,7 @@ public class KdTree {
 //        kt.insert(p9);
 //        Point2D p10 = new Point2D(0.25, 0.5);
 //        kt.insert(p10);
-        //Point2D queryPoint = new Point2D(0.75, 0.75);
+        Point2D queryPoint = new Point2D(0.75, 0.75);
         //kt.draw();
         // StdOut.println("Distance Squared to Query Point: " + kt.nearest(queryPoint).distanceSquaredTo(queryPoint));
         // StdOut.println(kt.nearest(queryPoint));
@@ -392,12 +381,14 @@ public class KdTree {
         // RectHV r = new RectHV(0.8, 0.5, 1.0, 0.7);
         // RectHV r = new RectHV(0.1, 0.1, 0.8, 0.6);    Just want to see the point 0.7, 0.2
         // RectHV r = new RectHV(0.0, 0.0, 1.0, 1.0);
-        RectHV r = new RectHV(0.7, 0.2, 1.0, 1.0);
+        // RectHV r = new RectHV(0.7, 0.2, 1.0, 1.0);
         //StdOut.println("Does r contain the first node? " + r.contains(p1));
 //        for (Point2D p : k.range(r)) {
 //            StdOut.println("Here is the points in above rectangle: " + p);
 //        }
-        StdOut.println("Here is the point in your rectangle : " + k.range(r));
+//        StdOut.println("Here is the point in your rectangle : " + k.range(r));
+        Point2D p = k.nearest(queryPoint);
+        StdOut.println("Here is the nearest point to 0.75, 0.75: " + p);
         k.draw();
 //        for (int i = 0; i < 20; i++) {
 //            Point2D p = new Point2D(StdRandom.uniform(0.0, 1.0), StdRandom.uniform(0.0, 1.0));
