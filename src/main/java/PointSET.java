@@ -1,17 +1,9 @@
 
 
-import edu.princeton.cs.algs4.SET;
-import edu.princeton.cs.algs4.Point2D;
-import edu.princeton.cs.algs4.RectHV;
-import edu.princeton.cs.algs4.Stack;
-import edu.princeton.cs.algs4.StdDraw;
-import edu.princeton.cs.algs4.StdRandom;
-import edu.princeton.cs.algs4.Stopwatch;
-import edu.princeton.cs.algs4.StdOut;
+import edu.princeton.cs.algs4.*;
 
 public class PointSET {
     private final SET<Point2D> treeSet;
-    private Stack<Point2D> interaPoints = new Stack<>();
 
 
     public PointSET() {
@@ -44,7 +36,7 @@ public class PointSET {
         if (p == null) throw new IllegalArgumentException("Can not send a null to " +
                 "nearest() ");
         else if (treeSet.isEmpty()) return null;
-        Point2D nearestP=treeSet.min();
+        Point2D nearestP = treeSet.min();
         for (Point2D point : treeSet) {
             if (point.distanceSquaredTo(p) < nearestP.distanceSquaredTo(p)) nearestP = point;
         }
@@ -54,17 +46,17 @@ public class PointSET {
     public void draw() {
         StdDraw.clear();
         StdDraw.setPenColor(StdDraw.BLACK);
+        StdDraw.setPenRadius(0.012);
         for (Point2D point : treeSet) {
             StdDraw.point(point.x(), point.y());
-            StdDraw.setPenColor(StdDraw.RED);
         }
     }
 
     public Iterable<Point2D> range(RectHV rect) {
+        Stack<Point2D> interaPoints = new Stack<>();
         if (rect == null) throw new IllegalArgumentException("Can not pass " +
                 "null to range().");
         else if (isEmpty()) return null;
-        interaPoints = new Stack<>();
         /* Use the tree and eliminate as much of it as you avoid searching. */
         for (Point2D point : treeSet) {
             if (rect.contains(point)) {
@@ -157,28 +149,29 @@ public class PointSET {
     public static void main(String[] args) {
         /* Measure how long it takes to insert() and contains() - should be logarithm. nearest() and
          * range should be linear(N). */
-        StdDraw.setPenRadius(0.01);
-        StdDraw.setPenColor(StdDraw.RED);
-        StdDraw.text(0.15, 0.98, "Insertion Times");
-        double interval = 0.001;
-        for (int i = 100; i < 10000001; i += 1000) {
-            double logOfNodes = Math.log(i);
-            StdDraw.setPenColor(StdDraw.BLACK);
-            StdDraw.text(0.15, 0.95, "Log of N multiplied");
-            StdDraw.point(interval, (logOfNodes / 100));
-            StdDraw.setPenColor(StdDraw.RED);
-            double iTime = insertTime(i);
-            StdDraw.point(interval, iTime);
-            StdDraw.setPenColor(StdDraw.BLUE);
-            StdDraw.text(0.15, 0.91, "Contains Times");
-            double cTime = containsTime(i);
-            StdDraw.point(interval, cTime);
-            double rTime = rangeTimes(i);
-            StdDraw.setPenColor(StdDraw.CYAN);
-            StdDraw.text(0.15, 0.87, "Range Times");
-            StdDraw.point(interval, rTime);
-            interval += 0.015;
-        }
+//        StdDraw.setPenRadius(0.01);
+//        StdDraw.setPenColor(StdDraw.RED);
+//        StdDraw.text(0.15, 0.98, "Insertion Times");
+//        double interval = 0.001;
+//        for (int i = 100; i < 10000001; i += 1000) {
+//            double logOfNodes = Math.log(i);
+//            StdDraw.setPenColor(StdDraw.BLACK);
+//            StdDraw.text(0.15, 0.95, "Log of N multiplied");
+//            StdDraw.point(interval, (logOfNodes / 100));
+//            StdDraw.setPenColor(StdDraw.RED);
+//            double iTime = insertTime(i);
+//            StdDraw.point(interval, iTime);
+//            StdDraw.setPenColor(StdDraw.BLUE);
+//            StdDraw.text(0.15, 0.91, "Contains Times");
+//            double cTime = containsTime(i);
+//            StdDraw.point(interval, cTime);
+//            double rTime = rangeTimes(i);
+//            StdDraw.setPenColor(StdDraw.CYAN);
+//            StdDraw.text(0.15, 0.87, "Range Times");
+//            StdDraw.point(interval, rTime);
+//            interval += 0.015;
+
+        //}
 
 //            StdDraw.rectangle(.10, .4, .02, .1);
 //
@@ -194,5 +187,25 @@ public class PointSET {
 //        StdDraw.rectangle(.10, .4, .02, .1);
 //
 //        pSet.draw();
+        PointSET ps = new PointSET();
+        Queue<Point2D> s = new Queue<>();
+        Point2D p1 = new Point2D(0.7, 0.2);
+        s.enqueue(p1);
+        Point2D p2 = new Point2D(0.5, 0.4);
+        s.enqueue(p2);
+        Point2D p3 = new Point2D(0.2, 0.3);
+        s.enqueue(p3);
+        Point2D p4 = new Point2D(0.4, 0.7);
+        s.enqueue(p4);
+        Point2D p5 = new Point2D(0.9, 0.6);
+        s.enqueue(p5);
+        for (Point2D p : s) {
+            ps.insert(p);
+        }
+        RectHV r = new RectHV(0.1, 0.1, 0.8, 0.6);
+        for (Point2D p : ps.range(r)) {
+            StdOut.println("Here is the points in above rectangle: " + p);
+        }
+        ps.draw();
     }
 }

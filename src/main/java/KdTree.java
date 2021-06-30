@@ -8,10 +8,10 @@ public class KdTree {
     private Node root;
     private Queue<Node> q = new Queue<>();
     private Queue<Point2D> pq = new Queue<>();
-    ArrayList<Point2D> points = new ArrayList<>();
-    Stack<Node> intersectingRectangles = new Stack<>();
-    RectHV rHl = null;
-    RectHV rHr = null;
+    private ArrayList<Point2D> points = new ArrayList<>();
+    private Stack<Node> intersectingRectangles = new Stack<>();
+    private RectHV rHl = null;
+    private RectHV rHr = null;
 
     private static class Node implements Comparable<Node> {
         Point2D p; // key
@@ -132,15 +132,15 @@ public class KdTree {
         return q;
     }
 
+    public boolean contains(Point2D p) {
+        return get(p) != null;
+    }
+
     public Iterable<Point2D> range(RectHV rect) {
         if (rect == null) throw new IllegalArgumentException("rectangle has to be a valid " +
                 "object. ");
         root.nodeRect = new RectHV(0.0, 0.0, 1.0, 1.0);
         return range(root, rect);
-    }
-
-    public boolean contains(Point2D p) {
-        return get(p) != null;
     }
 
     private Iterable<Point2D> range(Node h, RectHV rect) {
@@ -151,7 +151,7 @@ public class KdTree {
         if (h.right == null) {
             if (rect.contains(h.p) && !points.contains(h.p)) points.add(h.p);
         }
-        if (h.coordinate == false) {
+        if (!h.coordinate) {
             if (rect.contains(h.p) && !points.contains(h.p)) points.add(h.p);
             if (h.left != null) rHl = new RectHV(h.nodeRect.xmin(), h.nodeRect.ymin(), h.p.x(),
                     h.nodeRect.ymax());
@@ -172,8 +172,8 @@ public class KdTree {
         }
         if (h.coordinate) {  /// If h does not have a rectangle, recreate it. If it does use it.
             if (rect.contains(h.p) && !points.contains(h.p)) points.add(h.p);
-            RectHV rHl = new RectHV(h.nodeRect.xmin(), h.nodeRect.ymin(), h.p.x(), h.nodeRect.ymax());
-            RectHV rHr = new RectHV(h.p.x(), h.nodeRect.ymin(), h.nodeRect.xmax(), h.nodeRect.ymax());
+            RectHV rHl = new RectHV(h.nodeRect.xmin(), h.nodeRect.ymin(), h.nodeRect.xmax(), h.p.y());
+            RectHV rHr = new RectHV(h.nodeRect.xmin(), h.p.y(), h.nodeRect.xmax(), h.nodeRect.ymax());
             if (rHl.intersects(rect) && h.left == null) {
                 if (rect.contains(h.p) && !points.contains(h.p)) points.add(h.p);
             }
@@ -255,7 +255,7 @@ public class KdTree {
         corresponding to a node, there is no need to explore that node (or its subtrees). */
         RectHV initialRec = new RectHV(0.0, 0.0, 1.0, 1.0);
         Point2D nearestNeig = root.p;
-        root.nodeRect=initialRec;
+        root.nodeRect = initialRec;
         return nearest(root, p, nearestNeig);
     }
 
@@ -263,7 +263,7 @@ public class KdTree {
         RectHV rHl = null;
         RectHV rHr = null;
         if (h == null) return nearstP;
-        if (h.coordinate == false) {
+        if (!h.coordinate) {
             if (h.parent == null) {
                 rHl = new RectHV(0.0, 0.0, h.p.x(), 1.0);
                 rHr = new RectHV(h.p.x(), 0.0, 1.0, 1.0);
@@ -279,8 +279,8 @@ public class KdTree {
                         nearstP = h.left.p;
                     }
                 }
-                h.left.parent=h;
-                h.left.nodeRect=rHl;
+                h.left.parent = h;
+                h.left.nodeRect = rHl;
                 nearstP = nearest(h.left, p, nearstP);
             }
             if (h.right != null) {
@@ -289,10 +289,11 @@ public class KdTree {
                         nearstP = h.right.p;
                     }
                 }
+                h.right.parent = h;
+                h.right.nodeRect = rHr;
+                nearstP = nearest(h.right, p, nearstP);
             }
-            h.right.parent=h;
-            h.right.nodeRect=rHr;
-            nearstP = nearest(h.right, p, nearstP);
+
         }
         if (h.coordinate) {
             rHl = new RectHV(h.nodeRect.xmin(), h.nodeRect.ymin(), h.nodeRect.xmax(), h.p.y());
@@ -304,8 +305,8 @@ public class KdTree {
                         nearstP = h.left.p;
                     }
                 }
-                h.left.parent=h;
-                h.left.nodeRect=rHl;
+                h.left.parent = h;
+                h.left.nodeRect = rHl;
                 nearstP = nearest(h.left, p, nearstP);
             }
             if (h.right != null) {
@@ -359,7 +360,7 @@ public class KdTree {
 //        Point2D p10 = new Point2D(0.25, 0.5);
 //        kt.insert(p10);
         Point2D queryPoint = new Point2D(0.75, 0.75);
-        //kt.draw();
+        // kt.draw();
         // StdOut.println("Distance Squared to Query Point: " + kt.nearest(queryPoint).distanceSquaredTo(queryPoint));
         // StdOut.println(kt.nearest(queryPoint));
 //        StdOut.println("Changed something for testing.");
@@ -375,18 +376,37 @@ public class KdTree {
         s.enqueue(p4);
         Point2D p5 = new Point2D(0.9, 0.6);
         s.enqueue(p5);
+        Point2D p6 = new Point2D(0.1, 0.9);
+        s.enqueue(p6);
+        Point2D p7 = new Point2D(0.2, 0.8);
+        s.enqueue(p7);
+        Point2D p8 = new Point2D(0.3, 0.7);
+        s.enqueue(p8);
+        Point2D p9 = new Point2D(0.4, 0.7);
+        s.enqueue(p9);
+        Point2D p10 = new Point2D(0.9, 0.6);
+        s.enqueue(p10);
         for (Point2D p : s) {
             k.insert(p);
         }
-        // RectHV r = new RectHV(0.8, 0.5, 1.0, 0.7);
-        // RectHV r = new RectHV(0.1, 0.1, 0.8, 0.6);    Just want to see the point 0.7, 0.2
-        // RectHV r = new RectHV(0.0, 0.0, 1.0, 1.0);
-        // RectHV r = new RectHV(0.7, 0.2, 1.0, 1.0);
-        //StdOut.println("Does r contain the first node? " + r.contains(p1));
+        //Stack<RectHV> recs = new Stack<>();
+        //RectHV r = new RectHV(0.8, 0.5, 1.0, 0.7);
+        //recs.push(r);
+        RectHV r = new RectHV(0.1, 0.1, 0.8, 0.6);
+        // recs.push(r);
+        // r = new RectHV(0.0, 0.0, 1.0, 1.0);
+        // recs.push(r);
+        // r = new RectHV(0.7, 0.2, 1.0, 1.0);
+        // recs.push(r);
+//        for (RectHV rec : recs) {
+//            StdOut.println("Rectangle: " + rec + "Contains points: " + k.range(rec));
+//        }
+        // StdOut.println("Does r contain the first node? " + r.contains(p1));
 //        for (Point2D p : k.range(r)) {
 //            StdOut.println("Here is the points in above rectangle: " + p);
 //        }
 //        StdOut.println("Here is the point in your rectangle : " + k.range(r));
+        StdOut.println("Rectangle " + r + "has the following points inside it: " + k.range(r));
         Point2D p = k.nearest(queryPoint);
         StdOut.println("Here is the nearest point to 0.75, 0.75: " + p);
         k.draw();
