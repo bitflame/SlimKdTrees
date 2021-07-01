@@ -33,21 +33,21 @@ public class KdTree {
             double thisY = this.p.y();
             double hX = h.p.x();
             double hY = h.p.y();
-            if (h.coordinate == false) {
+            if (!this.coordinate) {
                 if (thisX < hX) {
-                    this.coordinate = true;
+                    h.coordinate = true;
                     return -1;
                 } else {
-                    this.coordinate = true;
+                    h.coordinate = true;
                     return 1;
                 }
             }
-            if (h.coordinate) {
+            if (this.coordinate) {
                 if (thisY < hY) {
-                    this.coordinate = false;
+                    h.coordinate = false;
                     return -1;
                 } else {
-                    this.coordinate = false;
+                    h.coordinate = false;
                     return 1;
                 }
             }
@@ -140,10 +140,24 @@ public class KdTree {
         if (rect == null) throw new IllegalArgumentException("rectangle has to be a valid " +
                 "object. ");
         root.nodeRect = new RectHV(0.0, 0.0, 1.0, 1.0);
-        return range(root, rect);
+        //        double xminCounter = 1.0;
+//        double yminCounter = 1.0;
+//        double xmaxCounter = 0.0;
+//        double ymaxCounter = 0.0;
+        /* I may have to and be able to use these  now to make sure I do not look at rectangles I do not need to. Once
+         * the rect is covered, I am done. Right now, it might have too many rectangles to count. It might! Might just
+         * work. Also as you pull off nodes from intersectionRectangles, you can check to see if left and right intersect,
+         * and if so, just ignor the parent and not check for points since it is redundant. You can save time and
+         * processing. */
+        for (Node node : range(root, rect)) {
+            for (Node n : keys(node)) {
+                if (rect.contains(n.p) && (!points.contains(n.p))) points.add(n.p);
+            }
+        }
+        return points;
     }
 
-    private Iterable<Point2D> range(Node h, RectHV rect) {
+    private Iterable<Node> range(Node h, RectHV rect) {
 
         if (h.left == null) {
             if (rect.contains(h.p) && !points.contains(h.p)) points.add(h.p);
@@ -151,12 +165,17 @@ public class KdTree {
         if (h.right == null) {
             if (rect.contains(h.p) && !points.contains(h.p)) points.add(h.p);
         }
-        if (!h.coordinate) {
+        if (!h.coordinate) {  // horizontal scenario
             if (rect.contains(h.p) && !points.contains(h.p)) points.add(h.p);
-            if (h.left != null) rHl = new RectHV(h.nodeRect.xmin(), h.nodeRect.ymin(), h.p.x(),
-                    h.nodeRect.ymax());
-            if (h.right != null) rHr = new RectHV(h.p.x(), h.nodeRect.ymin(), h.nodeRect.xmax(),
-                    h.nodeRect.ymax());
+            if (h.parent == null) {
+                rHl = new RectHV(h.nodeRect.xmin(), h.nodeRect.ymin(), h.p.x(), h.nodeRect.ymax());
+                rHr = new RectHV(h.p.x(), h.nodeRect.ymin(), h.nodeRect.xmax(), h.nodeRect.ymax());
+            } else {
+                if (h.left != null) rHl = new RectHV(h.nodeRect.xmin(), h.nodeRect.ymin(), h.p.x(),
+                        h.nodeRect.ymax());
+                if (h.right != null) rHr = new RectHV(h.p.x(), h.nodeRect.ymin(), h.nodeRect.xmax(),
+                        h.nodeRect.ymax());
+            }
             if (rHl.intersects(rect) && h.left != null) {
                 intersectingRectangles.push(h.left);
                 h.left.parent = h;
@@ -172,8 +191,8 @@ public class KdTree {
         }
         if (h.coordinate) {  /// If h does not have a rectangle, recreate it. If it does use it.
             if (rect.contains(h.p) && !points.contains(h.p)) points.add(h.p);
-            RectHV rHl = new RectHV(h.nodeRect.xmin(), h.nodeRect.ymin(), h.nodeRect.xmax(), h.p.y());
-            RectHV rHr = new RectHV(h.nodeRect.xmin(), h.p.y(), h.nodeRect.xmax(), h.nodeRect.ymax());
+            rHl = new RectHV(h.nodeRect.xmin(), h.nodeRect.ymin(), h.nodeRect.xmax(), h.p.y());
+            rHr = new RectHV(h.nodeRect.xmin(), h.p.y(), h.nodeRect.xmax(), h.nodeRect.ymax());
             if (rHl.intersects(rect) && h.left == null) {
                 if (rect.contains(h.p) && !points.contains(h.p)) points.add(h.p);
             }
@@ -195,20 +214,8 @@ public class KdTree {
                 range(h.right, rect);
             }
         }
-//        double xminCounter = 1.0;
-//        double yminCounter = 1.0;
-//        double xmaxCounter = 0.0;
-//        double ymaxCounter = 0.0;
-        /* I may have to and be able to use these  now to make sure I do not look at rectangles I do not need to. Once the rect
-         * is covered, I am done. Right now, it might have too many rectangles to count. It might! Might just work. Also as you
-         * pull off nodes from intersectionRectangles, you can check to see if left and right intersect, and if so, just ignor the
-         * parent and not check for points since it is redundant. You can save time and processing */
-        for (Node node : intersectingRectangles) {
-            for (Node n : keys(node)) {
-                if (rect.contains(n.p) && (!points.contains(n.p))) points.add(n.p);
-            }
-        }
-        return points;
+
+        return intersectingRectangles;
     }
 
     public void insert(Point2D p) {
@@ -222,13 +229,13 @@ public class KdTree {
         if (h == null) {
             return newNode;
         } else {
-            int cmp = newNode.compareTo(h);
+            int cmp = h.compareTo(newNode);
             if (cmp < 0) {
                 newNode.parent = h;
-                h.left = insert(h.left, newNode);
+                h.right = insert(h.right, newNode);
             } else if (cmp > 0) {
                 newNode.parent = h;
-                h.right = insert(h.right, newNode);
+                h.left = insert(h.left, newNode);
             }
         }
         int leftN = 0;
@@ -320,24 +327,93 @@ public class KdTree {
         return nearstP;
     }
 
+    private int height(Node root) {
+        if (root == null)
+            return 0;
+        else {
+            /* Compute the height of each subtree */
+            int lheight = height(root.left);
+            int rheight = height(root.right);
+            /* use the larger one */
+            if (lheight > rheight)
+                return (lheight + 1);
+            else return (rheight + 1);
+        }
+    }
+
+    /* print the current level */
+    private void printCurrentLevel(Node root, int level) {
+        if (root == null) return;
+        if (level == 1) StdOut.println(root.p);
+        else if (level > 1) {
+            printCurrentLevel(root.left, level - 1);
+            printCurrentLevel(root.right, level - 1);
+        }
+    }
+
+    private void ensureOrder(Node root, int level) {
+        if (root == null || root.left == null || root.right == null) return;
+        if (root.compareTo(root.left) < 0) StdOut.println("Need to fix the tree. " +
+                root.left + "is on the left of its parent but it is larger, or comparator is " +
+                "messed up");
+        if (root.compareTo(root.right) > 0) StdOut.println("Need to fix the tree. " + root +
+                "is the parent but it is larger than its right child, or comparator is " +
+                "messed up");
+        else {
+            ensureOrder(root.left, level - 1);
+            ensureOrder(root.right, level - 1);
+        }
+    }
+
+    void ensureOrder() {
+        int h = height(root);
+        int i;
+        for (i = 1; i <= h; i++) {
+            ensureOrder(root, i);
+        }
+    }
+
+    void printLevelOrder() {
+        int h = height(root);
+        int i;
+        for (i = 1; i <= h; i++) {
+            printCurrentLevel(root, i);
+        }
+    }
+
     public static void main(String[] args) {
-//        String filename = args[0];
-//        In in = new In(filename);
-//        PointSET brute = new PointSET();
-//        KdTree kdtree = new KdTree();
-//        while (!in.isEmpty()) {
-//            double x = in.readDouble();
-//            double y = in.readDouble();
-//            Point2D p = new Point2D(x, y);
+//        int increment = 3;
+//        Point2D p = null;
+        KdTree kdtree = new KdTree();
+//        for (int i = 0; i < 100; i++) {
+//            p = new Point2D(StdRandom.uniform(0.0, 1.0), StdRandom.uniform(0.0, 1.0));
 //            kdtree.insert(p);
-//            brute.insert(p);
 //        }
+//        RectHV r = new RectHV(0.1, 0.1, 0.8, 0.6);
+//        StdOut.println("Rectangle: " + r + "Contains points: " + kdtree.range(r));
+
+        String filename = args[0];
+        In in = new In(filename);
+//        PointSET brute = new PointSET();
+//
+        while (!in.isEmpty()) {
+            double x = in.readDouble();
+            double y = in.readDouble();
+            Point2D p = new Point2D(x, y);
+            kdtree.insert(p);
+//            brute.insert(p);
+        }
+        kdtree.printLevelOrder();
+        kdtree.ensureOrder();
+        // kdtree.draw();
+        // StdOut.println("now we are going to test range.");
+        // RectHV r = new RectHV(0.0, 0.0, 0.3, 0.1);
+        // StdOut.println("Rectangle: " + r + "Contains points: " + kdtree.range(r));
 //        StdOut.println("Should be 10 " + kdtree.size());
 //        StdOut.println("Should be 10 " + brute.size());
 //        StdOut.println("Should be false " + kdtree.isEmpty());
 //        StdOut.println("Should be false " + brute.isEmpty());
 //        kdtree.draw();
-
 //        KdTree kt = new KdTree();
 //        Point2D p1 = new Point2D(0.5, 0.25);
 //        kt.insert(p1);
@@ -359,40 +435,40 @@ public class KdTree {
 //        kt.insert(p9);
 //        Point2D p10 = new Point2D(0.25, 0.5);
 //        kt.insert(p10);
-        Point2D queryPoint = new Point2D(0.75, 0.75);
+        // Point2D queryPoint = new Point2D(0.75, 0.75);
         // kt.draw();
         // StdOut.println("Distance Squared to Query Point: " + kt.nearest(queryPoint).distanceSquaredTo(queryPoint));
         // StdOut.println(kt.nearest(queryPoint));
 //        StdOut.println("Changed something for testing.");
-        KdTree k = new KdTree();
-        Queue<Point2D> s = new Queue<>();
-        Point2D p1 = new Point2D(0.7, 0.2);
-        s.enqueue(p1);
-        Point2D p2 = new Point2D(0.5, 0.4);
-        s.enqueue(p2);
-        Point2D p3 = new Point2D(0.2, 0.3);
-        s.enqueue(p3);
-        Point2D p4 = new Point2D(0.4, 0.7);
-        s.enqueue(p4);
-        Point2D p5 = new Point2D(0.9, 0.6);
-        s.enqueue(p5);
-        Point2D p6 = new Point2D(0.1, 0.9);
-        s.enqueue(p6);
-        Point2D p7 = new Point2D(0.2, 0.8);
-        s.enqueue(p7);
-        Point2D p8 = new Point2D(0.3, 0.7);
-        s.enqueue(p8);
-        Point2D p9 = new Point2D(0.4, 0.7);
-        s.enqueue(p9);
-        Point2D p10 = new Point2D(0.9, 0.6);
-        s.enqueue(p10);
-        for (Point2D p : s) {
-            k.insert(p);
-        }
+        //KdTree k = new KdTree();
+//        Queue<Point2D> s = new Queue<>();
+//        Point2D p1 = new Point2D(0.7, 0.2);
+//        s.enqueue(p1);
+//        Point2D p2 = new Point2D(0.5, 0.4);
+//        s.enqueue(p2);
+//        Point2D p3 = new Point2D(0.2, 0.3);
+//        s.enqueue(p3);
+//        Point2D p4 = new Point2D(0.4, 0.7);
+//        s.enqueue(p4);
+//        Point2D p5 = new Point2D(0.9, 0.6);
+//        s.enqueue(p5);
+//        Point2D p6 = new Point2D(0.1, 0.9);
+//        s.enqueue(p6);
+//        Point2D p7 = new Point2D(0.2, 0.8);
+//        s.enqueue(p7);
+//        Point2D p8 = new Point2D(0.3, 0.7);
+//        s.enqueue(p8);
+//        Point2D p9 = new Point2D(0.4, 0.7);
+//        s.enqueue(p9);
+//        Point2D p10 = new Point2D(0.9, 0.6);
+//        s.enqueue(p10);
+//        for (Point2D p : s) {
+//            k.insert(p);
+//        }
         //Stack<RectHV> recs = new Stack<>();
         //RectHV r = new RectHV(0.8, 0.5, 1.0, 0.7);
         //recs.push(r);
-        RectHV r = new RectHV(0.1, 0.1, 0.8, 0.6);
+
         // recs.push(r);
         // r = new RectHV(0.0, 0.0, 1.0, 1.0);
         // recs.push(r);
@@ -406,10 +482,10 @@ public class KdTree {
 //            StdOut.println("Here is the points in above rectangle: " + p);
 //        }
 //        StdOut.println("Here is the point in your rectangle : " + k.range(r));
-        StdOut.println("Rectangle " + r + "has the following points inside it: " + k.range(r));
-        Point2D p = k.nearest(queryPoint);
-        StdOut.println("Here is the nearest point to 0.75, 0.75: " + p);
-        k.draw();
+//        StdOut.println("Rectangle " + r + "has the following points inside it: " + k.range(r));
+//        Point2D p = k.nearest(queryPoint);
+//        StdOut.println("Here is the nearest point to 0.75, 0.75: " + p);
+//        k.draw();
 //        for (int i = 0; i < 20; i++) {
 //            Point2D p = new Point2D(StdRandom.uniform(0.0, 1.0), StdRandom.uniform(0.0, 1.0));
 //            k.insert(p);

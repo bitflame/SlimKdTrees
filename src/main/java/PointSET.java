@@ -187,6 +187,10 @@ public class PointSET {
 //        StdDraw.rectangle(.10, .4, .02, .1);
 //
 //        pSet.draw();
+        int increment = 10;
+        for (int i= 0; i < 1000;i*=increment) {
+            StdOut.println(i);
+        }
         PointSET ps = new PointSET();
         Queue<Point2D> s = new Queue<>();
         Point2D p1 = new Point2D(0.7, 0.2);
