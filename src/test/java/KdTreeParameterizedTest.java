@@ -12,6 +12,7 @@ import org.mockito.*;
 
 
 import java.lang.reflect.*;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -36,6 +37,7 @@ class KdTreeParameterizedTest {
     private int increment = 5;
     RectHV rec = new RectHV(0.0, 0.0, 1.0, 1.0);
 
+    @Disabled
     @BeforeEach
     void setup() {
         Point2D p1 = new Point2D(0.5, 0.25);
@@ -66,17 +68,45 @@ class KdTreeParameterizedTest {
     }
 
     /* This is not exactly what I wanted to do, but it is a good example that I can follow as a
-     * reference */
+     * reference Here are some extra points if you need later: "0.5,0.25", "0.0,0.0", "0.5,0.0", "0.5,0.0", "0.25,0.0", "0.0,1.0", "1.0,0.5",
+            "1.0,0.5", "0.25,0.0", "0.0,0.25", "0.25,0.0", "0.25,0.5",*/
     @Disabled
     @ParameterizedTest
-    @CsvSource({"0.5,0.25", "0.0,0.0", "0.5,0.0", "0.5,0.0", "0.25,0.0", "0.0,1.0", "1.0,0.5",
-            "1.0,0.5", "0.25,0.0", "0.0,0.25", "0.25,0.0", "0.25,0.5"})
-    void nearest(@AggregateWith(PointInfoAggregator.class) Point2D point) {
-        kt.insert(point);
+    @CsvSource({"0.0,0.1", "0.1, 0.2", "0.2, 0.3", "0.3, 0.4", "0.4, 0.5", "0.5, 0.6", "0.6, 0.7", "0.7, 0.8"
+            , "0.8, 0.9", "0.9,1.0"})
+    void nearest(@AggregateWith(PointInfoAggregator.class) Point2D point1, @AggregateWith(PointInfoAggregator.class)
+            Point2D point2) {
+        for (int i = 0; i < 100; i++) {
+            Point2D p = new Point2D(StdRandom.uniform(0.0, 1.0), StdRandom.uniform(0.0, 1.0));
+            kt.insert(p);
+        }
+        RectHV r = new RectHV(point1.x(), point1.y(), point2.x(), point1.y());
         Point2D queryPoint = new Point2D(0.75, 0.75);
-        assertFalse(kt.contains(queryPoint));
-        assertFalse(queryPoint.equals(kt.nearest(queryPoint)));
-        kt.draw();
+//        assertFalse(kt.contains(queryPoint));
+//        assertFalse(queryPoint.equals(kt.nearest(queryPoint)));
+//        kt.draw();
+    }
+
+    @ParameterizedTest
+    @CsvSource({"0.0,0.1", "0.1, 0.2", "0.2, 0.3", "0.3, 0.4", "0.4, 0.5", "0.5, 0.6", "0.6, 0.7", "0.7, 0.8"
+            , "0.8, 0.9", "0.9,1.0"})
+    void rangeParameterizedTestWithControlledRectangleSize(@AggregateWith(PointInfoAggregator.class)
+                                                                   Point2D point1,
+                                                           @AggregateWith(PointInfoAggregator.class)
+                                                                   Point2D point2) {
+        for (int i = 0; i < 100; i++) {
+            Point2D p = new Point2D(StdRandom.uniform(0.0, 1.0), StdRandom.uniform(0.0, 1.0));
+            kt.insert(p);
+        }
+        /* I had to get creative with the values. The names below do not map to what should go into rectangle
+         * but the values are correct and make the test work the way I want. */
+        RectHV r = new RectHV(point1.x(), point2.x(), point1.y(), point2.y());
+        //StdOut.println("Here are the points in rectangle " + r);
+        StdOut.printf("%2s%6s%6s%6s%n", "xmin", "ymin", "xmax", "ymax");
+        StdOut.printf("%.2f%5.2f%5.2f%5.2f%n",r.xmin(),r.ymin(),r.xmax(),r.ymax());
+        for (Point2D p : kt.range(r)) {
+            StdOut.println(p);
+        }
     }
 
     @Disabled
@@ -100,7 +130,7 @@ class KdTreeParameterizedTest {
         // KdTree.Node.class, int.class);
     }
 
-
+    @Disabled
     @RepeatedTest(5)
     void range_should_work() {
         rec = new RectHV(StdRandom.uniform(0.0, 0.5), StdRandom.uniform(0.0, 0.5),
@@ -114,26 +144,31 @@ class KdTreeParameterizedTest {
         }
     }
 
+    @Disabled
     @Test
     void range_should_catch_something() {
         rec = new RectHV(0.0, 0.0, 1.0, 1.0);
+        StdOut.println("Here are the intersecting points ");
         for (Point2D p : kt.range(rec)) {
             StdOut.println("Here are the points in the rectangle above: " + p);
         }
     }
 
+    @Disabled
     @Test
     void range_with_rec_of_zero_size() {
         rec = new RectHV(0.0, 0.0, 0.0, 0.0);
         kt.range(rec);
     }
 
+    @Disabled
     @Test
     void range_with_rec_of_zero_width() {
         rec = new RectHV(0.0, 0.1, 0.0, 0.1);
         kt.range(rec);
     }
 
+    @Disabled
     @Test
     void isEmpty() {
         assertFalse(kt.isEmpty());
