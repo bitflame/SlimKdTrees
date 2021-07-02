@@ -100,7 +100,7 @@ class KdTreeParameterizedTest {
         // KdTree.Node.class, int.class);
     }
 
-    @Disabled
+
     @RepeatedTest(5)
     void range_should_work() {
         rec = new RectHV(StdRandom.uniform(0.0, 0.5), StdRandom.uniform(0.0, 0.5),
