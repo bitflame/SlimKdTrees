@@ -9,6 +9,7 @@ public class KdTree {
     private Queue<Node> q = new Queue<>();
     private Queue<Point2D> pq = new Queue<>();
     private ArrayList<Point2D> points = new ArrayList<>();
+    private ArrayList<RectHV> treeRects = new ArrayList<>();
     private Stack<Node> intersectingRectangles = new Stack<>();
     private RectHV rHl = null;
     private RectHV rHr = null;
@@ -154,6 +155,8 @@ public class KdTree {
                 if (rect.contains(n.p) && (!points.contains(n.p))) points.add(n.p);
             }
         }
+        treeRects.add(root.nodeRect);
+
         return points;
     }
 
@@ -171,48 +174,60 @@ public class KdTree {
                 rHl = new RectHV(h.nodeRect.xmin(), h.nodeRect.ymin(), h.p.x(), h.nodeRect.ymax());
                 rHr = new RectHV(h.p.x(), h.nodeRect.ymin(), h.nodeRect.xmax(), h.nodeRect.ymax());
             } else {
-                if (h.left != null) rHl = new RectHV(h.nodeRect.xmin(), h.nodeRect.ymin(), h.p.x(),
-                        h.nodeRect.ymax());
-                if (h.right != null) rHr = new RectHV(h.p.x(), h.nodeRect.ymin(), h.nodeRect.xmax(),
-                        h.nodeRect.ymax());
+                if (h.left != null) {
+                    rHl = new RectHV(h.nodeRect.xmin(), h.nodeRect.ymin(), h.p.x(),
+                            h.nodeRect.ymax());
+                    h.left.parent = h;
+                    h.left.nodeRect = rHl;
+                    range(h.left, rect);
+                }
+                if (h.right != null) {
+                    rHr = new RectHV(h.p.x(), h.nodeRect.ymin(), h.nodeRect.xmax(),
+                            h.nodeRect.ymax());
+                    h.right.parent = h;
+                    h.right.nodeRect = rHr;
+                    range(h.right, rect);
+                }
             }
             if (rHl.intersects(rect) && h.left != null) {
                 intersectingRectangles.push(h.left);
-                h.left.parent = h;
-                h.left.nodeRect = rHl;
-                range(h.left, rect);
             }
             if (rHr.intersects(rect) && h.right != null) {
-                h.right.parent = h;
-                h.right.nodeRect = rHr;
                 intersectingRectangles.push(h.right);
-                range(h.right, rect);
             }
         }
         if (h.coordinate) {  /// If h does not have a rectangle, recreate it. If it does use it.
             if (rect.contains(h.p) && !points.contains(h.p)) points.add(h.p);
-            rHl = new RectHV(h.nodeRect.xmin(), h.nodeRect.ymin(), h.nodeRect.xmax(), h.p.y());
-            rHr = new RectHV(h.nodeRect.xmin(), h.p.y(), h.nodeRect.xmax(), h.nodeRect.ymax());
+            if (h.left != null) {
+                rHl = new RectHV(h.nodeRect.xmin(), h.nodeRect.ymin(), h.nodeRect.xmax(), h.p.y());
+                h.left.parent = h;
+                h.left.nodeRect = rHl;
+                range(h.left, rect);
+            }
+            if (h.right != null) {
+                rHr = new RectHV(h.nodeRect.xmin(), h.p.y(), h.nodeRect.xmax(), h.nodeRect.ymax());
+                h.right.parent = h;
+                h.right.nodeRect = rHr;
+                range(h.right, rect);
+            }
+
             if (rHl.intersects(rect) && h.left == null) {
+                /* why test intersect? Just see if if the point is in the rectangle */
+                /// todo -- remove the if tests later
                 if (rect.contains(h.p) && !points.contains(h.p)) points.add(h.p);
             }
             if (rHl.intersects(rect) && h.left != null) {
                 intersectingRectangles.push(h.left);
-                h.left.parent = h;
-                h.left.nodeRect = rHl;
-                range(h.left, rect);
-                    /* put the intersecting rectangles in a stack; later pull them out 1 by 1 until the entire
-                    rectangle is covered */
             }
             if (rHr.intersects(rect) && h.right == null) {
                 if (rect.contains(h.p) && !points.contains(h.p)) points.add(h.p);
             }
             if (rHr.intersects(rect) && h.right != null) {
-                h.right.parent = h;
-                h.right.nodeRect = rHr;
                 intersectingRectangles.push(h.right);
-                range(h.right, rect);
+
             }
+
+
         }
 
         return intersectingRectangles;

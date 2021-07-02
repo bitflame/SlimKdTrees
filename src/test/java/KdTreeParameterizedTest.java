@@ -58,7 +58,7 @@ class KdTreeParameterizedTest {
 //        kt.insert(p9);
 //        Point2D p10 = new Point2D(0.25, 0.5);
 //        kt.insert(p10);
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 0; i < 10; i++) {
             p1 = new Point2D(StdRandom.uniform(0.0, 1.0), StdRandom.uniform(0.0, 1.0));
             kt.insert(p1);
         }
@@ -94,13 +94,13 @@ class KdTreeParameterizedTest {
     void KdTree_Should_Be_in_Order() throws NoSuchMethodException, SecurityException
             , IllegalAccessError, IllegalArgumentException, InvocationTargetException {
         /* This needs more know how since Node is private also. I am not sure how to address
-        * that right now. I was following https://roytuts.com/how-to-test-private-methods-using-junit-5/
-        */
+         * that right now. I was following https://roytuts.com/how-to-test-private-methods-using-junit-5/
+         */
         // Method mthod = KdTree.class.getDeclaredMethod("printCurrentLevel",
         // KdTree.Node.class, int.class);
     }
 
-    @Test
+    @Disabled
     @RepeatedTest(5)
     void range_should_work() {
         rec = new RectHV(StdRandom.uniform(0.0, 0.5), StdRandom.uniform(0.0, 0.5),
@@ -109,7 +109,17 @@ class KdTreeParameterizedTest {
         StdOut.printf("xmin:%.2f ymin:%5.2f xmax:%5.2f ymax:%5.2f%n ", rec.xmin(), rec.ymin(), rec.xmax(),
                 rec.ymax());
         kt.range(rec);
+        for (Point2D p : kt.range(rec)) {
+            StdOut.println("Here are the points in the rectangle above: " + p);
+        }
+    }
 
+    @Test
+    void range_should_catch_something() {
+        rec = new RectHV(0.0, 0.0, 1.0, 1.0);
+        for (Point2D p : kt.range(rec)) {
+            StdOut.println("Here are the points in the rectangle above: " + p);
+        }
     }
 
     @Test
