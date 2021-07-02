@@ -1,5 +1,11 @@
 
-import edu.princeton.cs.algs4.*;
+import edu.princeton.cs.algs4.Queue;
+import edu.princeton.cs.algs4.Point2D;
+import edu.princeton.cs.algs4.Stack;
+import edu.princeton.cs.algs4.StdOut;
+import edu.princeton.cs.algs4.RectHV;
+import edu.princeton.cs.algs4.StdDraw;
+import edu.princeton.cs.algs4.In;
 
 import java.util.ArrayList;
 
@@ -148,7 +154,7 @@ public class KdTree {
         /* I may have to and be able to use these  now to make sure I do not look at rectangles I do not need to. Once
          * the rect is covered, I am done. Right now, it might have too many rectangles to count. It might! Might just
          * work. Also as you pull off nodes from intersectionRectangles, you can check to see if left and right intersect,
-         * and if so, just ignor the parent and not check for points since it is redundant. You can save time and
+         * and if so, just ignore the parent and not check for points since it is redundant. You can save time and
          * processing. */
         for (Node node : range(root, rect)) {
             for (Node n : keys(node)) {
@@ -161,7 +167,7 @@ public class KdTree {
     }
 
     private Iterable<Node> range(Node h, RectHV rect) {
-
+/* try caching the coordinates you need */
         if (h.left == null) {
             if (rect.contains(h.p) && !points.contains(h.p)) points.add(h.p);
         }
@@ -226,10 +232,9 @@ public class KdTree {
                 intersectingRectangles.push(h.right);
 
             }
-
-
         }
-
+        //StdOut.println("We are catching and processing " + intersectingRectangles.size() + "rectangles for " + size() +
+                //"nodes. We might need to process only the ones we really need starting from the smallest.");
         return intersectingRectangles;
     }
 
@@ -380,7 +385,7 @@ public class KdTree {
         }
     }
 
-    void ensureOrder() {
+    private void ensureOrder() {
         int h = height(root);
         int i;
         for (i = 1; i <= h; i++) {
@@ -388,7 +393,7 @@ public class KdTree {
         }
     }
 
-    void printLevelOrder() {
+    private void printLevelOrder() {
         int h = height(root);
         int i;
         for (i = 1; i <= h; i++) {

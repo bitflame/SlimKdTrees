@@ -1,6 +1,15 @@
 
 
-import edu.princeton.cs.algs4.*;
+
+import edu.princeton.cs.algs4.SET;
+import edu.princeton.cs.algs4.Point2D;
+import edu.princeton.cs.algs4.RectHV;
+import edu.princeton.cs.algs4.Stack;
+import edu.princeton.cs.algs4.StdDraw;
+import edu.princeton.cs.algs4.StdRandom;
+import edu.princeton.cs.algs4.Stopwatch;
+import edu.princeton.cs.algs4.StdOut;
+import edu.princeton.cs.algs4.Queue;
 
 public class PointSET {
     private final SET<Point2D> treeSet;
